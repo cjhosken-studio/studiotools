@@ -1,0 +1,3 @@
+[submodule "blender_studiotools"]
+	path = blender_studiotools
+	url = git@github.com:cjhosken-studio/blender_studiotools.git
