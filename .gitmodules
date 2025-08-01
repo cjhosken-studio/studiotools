@@ -1,3 +1,6 @@
 [submodule "blender_studiotools"]
 	path = blender_studiotools
 	url = git@github.com:cjhosken-studio/blender_studiotools.git
+[submodule "houdini_studiotools"]
+	path = houdini_studiotools
+	url = git@github.com:cjhosken-studio/houdini_studiotools.git
