@@ -3,7 +3,7 @@ from PySide6.QtGui import QIcon
 import os
 import sys
 
-from studiotools_ui.python.studiotools_ui.widgets.mainwindow import STMainWindow
+from studiotools_ui.widgets.mainwindow import STMainWindow
 
 def launch():
     name = "Studio Tools"

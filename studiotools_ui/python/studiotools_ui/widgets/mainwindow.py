@@ -2,6 +2,7 @@ from PySide6.QtWidgets import QMainWindow
 from PySide6.QtGui import QAction
 
 import os
+from pxr import Usdviewq
 
 class STMainWindow(QMainWindow):
     def __init__(self):
@@ -9,6 +10,7 @@ class STMainWindow(QMainWindow):
         self.resize(1280, 720)
         self.load_envs()
         self.create_menu_bar()
+        self.setup_usdview()
     
     def load_envs(self):
         self.use_local_packages = bool(int(os.environ.get("ST_USE_LOCAL_PACKAGES", "0")))
@@ -27,3 +29,15 @@ class STMainWindow(QMainWindow):
         self.use_local_packages = checked
         print(f"Use Local Packages: {'Enabled' if checked else 'Disabled'}")
         os.environ["ST_USE_LOCAL_PACKAGES"] = "1" if checked else "0"
+        
+    def setup_usdview(self):
+        # Create USDView widget
+        self.usdviewWidget = Usdviewq.usdview.StageView()
+        
+        # Set it as central widget
+        self.setCentralWidget(self.usdviewWidget)
+        
+        # Optional: Load a default stage if needed
+        # from pxr import Usd
+        # stage = Usd.Stage.CreateNew("Default.usda")
+        # self.usdviewWidget.setStage(stage)

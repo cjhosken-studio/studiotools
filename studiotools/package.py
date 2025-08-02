@@ -3,12 +3,8 @@ version = "1.0.0"
 
 tools = ["studiotools"]
 
-variants = [
-    #["python-3.11"],
-    #["python-3.13"]
-]
-
 requires = [
+    "python-3.11",
     "studiotools_ui"
 ]
 

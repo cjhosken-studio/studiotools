@@ -1,13 +1,11 @@
 name = "studiotools_ui"
 version = "1.0.0"
 
-variants = [
-    #["python-3.11"],
-    #["python-3.13"]
-]
+variants = []
 
 requires = [
-
+    "python-3.11",
+    "usd-25.05"
 ]
 
 uuid = "cjhosken.studiotools_ui"
