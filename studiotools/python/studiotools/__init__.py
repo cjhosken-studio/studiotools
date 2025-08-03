@@ -10,27 +10,23 @@ import time
 def start_server(port=5000):
     import app
     app.main(port)
-
-def start_client(port=5000):
+    
+def start_client(port=5001):
     subprocess.call([
         "npm", "run", "dev", "--" , "--port", str(port),
     ], cwd=os.path.join(os.path.dirname(__file__), "..", "..", "source"))
 
-def main():
+def main():    
     port = 5000
-
-    # Now we're in the Rez environment, start the components
-    server_thread = threading.Thread(target=start_server, args=(port,))
-    server_thread.daemon = True
-    server_thread.start()
-
-    client_thread = threading.Thread(target=start_client, args=(port,))
+    client_thread = threading.Thread(target=start_client, args=(port+1,))
     client_thread.daemon = True
     client_thread.start()
 
-    time.sleep(1)
+    client_thread = threading.Thread(target=start_server, args=(port,))
+    client_thread.daemon = True
+    client_thread.start()
 
-    webbrowser.open(f"http://localhost:{port}")
+    webbrowser.open(f"http://localhost:{port+1}")
 
     # Keep main thread alive
     try:

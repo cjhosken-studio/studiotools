@@ -6,7 +6,8 @@ tools = ["studiotools"]
 requires = [
     "python-3.13",
     "node",
-    "Flask"
+    "Flask",
+    "flask-cors"
 ]
 
 uuid = "cjhosken.studiotools"
