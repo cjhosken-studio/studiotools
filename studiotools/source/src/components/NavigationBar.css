@@ -1,0 +1,18 @@
+.navigation-bar {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    background-color: #4a4a4a;
+    width: 100%;
+    height: 64px;
+}
+
+.set-project-url-button {
+    margin-left: 1em;
+    aspect-ratio: 1;
+    width: 32px;
+    background-color: red;
+    border: none;
+    border-radius: 6px;
+}
