@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, nativeTheme } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
@@ -9,10 +9,12 @@ const __dirname = path.dirname(__filename);
 let mainWindow = null
 let pythonProcess = null
 
+nativeTheme.themeSource = 'dark'
+
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: 1920,
+    height: 1080,
     webPreferences: {
       preload: path.join(__dirname, '../electron/preload.js'),
       nodeIntegration: false,
