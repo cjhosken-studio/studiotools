@@ -44,6 +44,7 @@
     "icon": "public/icon.png",
     "asar": false,
     "files": [
+      "public/**/*",
       "backend/**/*",
       "dist/**/*",
       "electron/**/*",

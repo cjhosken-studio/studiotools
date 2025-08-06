@@ -13,6 +13,7 @@ nativeTheme.themeSource = 'dark'
 
 function createWindow() {
   mainWindow = new BrowserWindow({
+    icon: path.join(__dirname, "../public/icon.png"),
     width: 1920,
     height: 1080,
     webPreferences: {
