@@ -1,7 +1,9 @@
 {
-  "name": "source",
+  "name": "studiotools_frontend",
+  "author": "Christopher Hosken",
+  "description": "The frontend part of studiotools.",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

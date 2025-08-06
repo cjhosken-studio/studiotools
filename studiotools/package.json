@@ -1,0 +1,39 @@
+{
+  "name": "studiotools",
+  "version": "1.0.0",
+  "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development concurrently \"npm run backend\" \"npm run frontend\" \"npm run electron\"",
+    "backend": "cd backend && python -m uvicorn main:app --reload",
+    "frontend": "cd frontend && npm run dev",
+    "electron": "wait-on tcp:8000 && wait-on http://localhost:3000 && electron .",
+    "build": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "cross-env": "^10.0.0",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "asar": false,
+    "files": [
+      "!**/.venv"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/.venv",
+        "to": "python",
+        "filter": ["**/*"]
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    }
+  }
+}
