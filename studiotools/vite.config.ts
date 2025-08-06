@@ -6,7 +6,6 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   base: './',
-  root: path.resolve(__dirname, './src'),
   server: {
     port: 3000,
     strictPort: true,
@@ -20,5 +19,8 @@ export default defineConfig({
         secure: false
       }
     }
-  }
+  },
+  build: {
+    outDir: 'dist',
+  },
 })

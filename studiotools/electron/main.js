@@ -1,39 +1,42 @@
-const { app, BrowserWindow } = require('electron')
-const path = require('path')
-const { spawn } = require('child_process')
+import { app, BrowserWindow } from 'electron';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
 
-let pythonProcess = null
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 let mainWindow = null
+let pythonProcess = null
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
+      preload: path.join(__dirname, '../electron/preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: true,
-      webSecurity: true,
-      preload: path.join(__dirname, 'preload.js')
-    }
+    },
+    titleBarStyle: "hiddenInset",
+    darkTheme: true,
   })
 
   // Load the Vue app
   if (process.env.NODE_ENV === 'development') {
     mainWindow.loadURL('http://localhost:3000')
-    mainWindow.webContents.openDevTools()
   } else {
-    mainWindow.loadFile(path.join(__dirname, 'frontend/index.html'))
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'))
   }
 }
 
 app.whenReady().then(() => {
   const pythonPath = process.env.NODE_ENV === 'development' 
-    ? 'python' // Use system Python in dev
-    : path.join(process.resourcesPath, 'python', 'bin', 'python') // Packaged path
+    ? 'python3' // Use system Python in dev
+    : path.join(process.resourcesPath, 'python', 'bin', 'python3') // Packaged path
   // Start Python backend
   pythonProcess = spawn(pythonPath, ['main.py'], {
-    cwd: path.join(__dirname, 'backend')
+    cwd: path.join(__dirname, '../backend')
   })
 
   pythonProcess.stdout.on('data', (data) => {
@@ -43,13 +46,7 @@ app.whenReady().then(() => {
   pythonProcess.stderr.on('data', (data) => {
     console.error(`Python stderr: ${data}`)
   })
-
-  createWindow()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+}).then(createWindow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

@@ -10,7 +10,7 @@ requires = [
 
 uuid = "cjhosken.studiotools"
 
-build_command = "cd {root}; npm run build --prefix=$REZ_BUILD_INSTALL_PATH"
+build_command = "cd {root}; npm run build; cp -r dist/* $REZ_BUILD_INSTALL_PATH"
 
 def commands():
-    env.PATH.append("{root}/bin")
+    alias("studiotools", f"{{root}}/studiotools-{version}.AppImage")
