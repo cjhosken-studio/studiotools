@@ -8,7 +8,7 @@ requires = [
     "node",
 ]
 
-uuid = "cjhosken.studiotools"
+uuid = "cjhosken.studio.studiotools"
 
 build_command = "cd {root}; npm run build; cp -r dist/* $REZ_BUILD_INSTALL_PATH"
 

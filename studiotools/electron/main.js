@@ -18,9 +18,11 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
     },
-    titleBarStyle: "hiddenInset",
+    frame: true,
     darkTheme: true,
   })
+
+  mainWindow.setMenu(null);
 
   // Load the Vue app
   if (process.env.NODE_ENV === 'development') {
@@ -36,7 +38,8 @@ app.whenReady().then(() => {
     : path.join(process.resourcesPath, 'python', 'bin', 'python3') // Packaged path
   // Start Python backend
   pythonProcess = spawn(pythonPath, ['main.py'], {
-    cwd: path.join(__dirname, '../backend')
+    cwd: path.join(__dirname, '../backend'),
+    stdio: 'pipe'
   })
 
   pythonProcess.stdout.on('data', (data) => {
@@ -46,11 +49,17 @@ app.whenReady().then(() => {
   pythonProcess.stderr.on('data', (data) => {
     console.error(`Python stderr: ${data}`)
   })
+
+  pythonProcess.on('close', (code) => {
+    console.log(`Python process exited with code ${code}`);
+    pythonProcess = null;
+  });
+
 }).then(createWindow)
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    if (pythonProcess) pythonProcess.kill()
     app.quit()
+    process.exit(0);
   }
 })
