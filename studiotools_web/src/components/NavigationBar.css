@@ -1,0 +1,21 @@
+#navigation-bar {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content:center;
+  gap: 5px;
+}
+
+#project-url-input {
+  width: 40%;
+}
+
+#project-select-button {
+  aspect-ratio: 1.0;
+}
+
+#project-create-button {
+  aspect-ratio: 1.0;
+}

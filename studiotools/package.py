@@ -5,12 +5,11 @@ tools = ["studiotools"]
 
 requires = [
     "python-3.13",
-    "node",
 ]
 
 uuid = "cjhosken.studio.studiotools"
 
-build_command = "cd {root}; npm run build; cp -r dist/* $REZ_BUILD_INSTALL_PATH"
+build_command = ""
 
 def commands():
-    alias("studiotools", f"{{root}}/studiotools-{version}.AppImage")
+    pass

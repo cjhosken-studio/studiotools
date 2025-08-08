@@ -6,9 +6,9 @@
   "main": "electron/main.js",
   "scripts": {
     "dev": "cross-env NODE_ENV=development concurrently -k -n \"npm run backend\" \"npm run frontend\" \"npm run electron\"",
-    "backend": "cd backend && python -m uvicorn main:app --reload",
+    "backend": "cd backend && python3 main.py",
     "frontend": "vite",
-    "electron": "wait-on tcp:8000 && wait-on http://localhost:3000 && electron .",
+    "electron": "wait-on http://localhost:3000 && electron .",
     "build": "vite build && electron-builder"
   },
   "keywords": [],
@@ -17,7 +17,8 @@
   "dependencies": {
     "ps-node": "^0.1.6",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-icons": "^5.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
