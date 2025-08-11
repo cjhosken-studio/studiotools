@@ -21,18 +21,16 @@
       "frontend/dist-electron/**/*"
     ],
     "extraResources": [
-      {
-        "from": "backend/dist/main.exe",
-        "to": "backend/main.exe"
-      },
-      {
-        "from": "backend/dist/main",
-        "to": "backend/main"
-      }
     ],
     "win": {
       "target": "zip",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "extraResources": [
+        {
+          "from": "backend/dist/main.exe",
+          "to": "backend/main.exe"
+        }
+      ]
     },
     "mac": {
       "target": "dmg",
@@ -40,7 +38,14 @@
     },
     "linux": {
       "target": "AppImage",
-      "icon": "assets/icon.png"
+      "category": "VFX",
+      "icon": "assets/icon.png",
+      "extraResources": [
+        {
+          "from": "backend/dist/main",
+          "to": "backend/main"
+        }
+      ]
     }
   },
   "devDependencies": {
