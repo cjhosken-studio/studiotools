@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, nativeTheme } from 'electron';
 import path from 'path';
 import { spawn, ChildProcess } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -9,7 +9,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function createWindow() {
+
+  nativeTheme.themeSource = 'dark'; // Set the theme to dark mode
+  if (process.platform === 'linux') {
+    process.env.GTK_THEME = 'Adwaita:dark'; // Force dark theme
+    // Alternative: Use 'Yaru-dark' (Ubuntu) or 'Arc-Dark' (popular theme)
+  }
+
   const win = new BrowserWindow({
+    icon: path.join(process.resourcesPath, "assets", "icon512x512.png"),
     width: 1200,
     height: 800,
     webPreferences: {

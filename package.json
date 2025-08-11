@@ -21,6 +21,10 @@
       "frontend/dist-electron/**/*"
     ],
     "extraResources": [
+      {
+        "from": "assets/",
+        "to": "assets/"
+      }
     ],
     "win": {
       "target": "zip",
@@ -39,7 +43,7 @@
     "linux": {
       "target": "AppImage",
       "category": "VFX",
-      "icon": "assets/icon.png",
+      "icon": "assets/icon512x512.png",
       "extraResources": [
         {
           "from": "backend/dist/main",
