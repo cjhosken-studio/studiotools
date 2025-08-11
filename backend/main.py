@@ -7,7 +7,7 @@ app = FastAPI()
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Vite default port
+    allow_origins=["http://localhost:3128"],  # Vite default port
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -15,7 +15,7 @@ app.add_middleware(
 
 class Item(BaseModel):
     name: str
-    description: str | None = None
+    description: str = None
 
 @app.get("/api/data")
 def read_data():
