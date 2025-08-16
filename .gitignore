@@ -1,5 +1,0 @@
-build/
-venv/
-dist/
-node_modules/
-dist-electron/
