@@ -1,4 +1,4 @@
-name: Build Tauri App
+name: Build Studio Tools
 
 on:
   push:
@@ -7,13 +7,7 @@ on:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-20.04, windows-latest]
-
-    runs-on: ${{ matrix.os }}
-
+    runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,16 +18,14 @@ jobs:
           node-version: 18
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
 
       - name: Install dependencies
         run: npm install
 
       - name: Build Tauri app
         run: npm run tauri build
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: tauri-build-${{ matrix.os }}
-          path: src-tauri/target/release/bundle/
