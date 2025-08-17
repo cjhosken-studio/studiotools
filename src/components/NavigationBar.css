@@ -1,0 +1,16 @@
+nav {
+    padding: 0.5em 0em;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1em;
+}
+
+#project-select {
+    width: 10%;
+}
+
+#cwd-input {
+    width: 50%;
+}
