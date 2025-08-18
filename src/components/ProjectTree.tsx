@@ -32,11 +32,6 @@ async function scanFolder(path: string): Promise<TreeViewBaseItem[]> {
         if (e.isDirectory && (await exists(fullPath))) {
         const subTree = await scanFolder(fullPath);
         folders.push(buildTreeNode(fullPath, e.name, subTree));
-        } 
-        else if (e.isFile || e.isSymlink) {
-            folders.push(
-                buildTreeNode(fullPath, e.name, [])
-            );
         }
     }
   }

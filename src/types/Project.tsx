@@ -21,9 +21,22 @@ export default class Project {
     }
 }
 
+const defaultProjectStructure = [
+  "config",
+  "edit",
+  "asset",
+  "sequence",
+]
+
 export async function createProject(name: string, path: string) : Promise<Project> {
     
     await mkdir(path);
+
+    for (const folder of defaultProjectStructure) {
+      const folderPath = await join(path, folder);
+      await mkdir(folderPath);
+    }
+
     const configPath = await join(path, "project.yaml");
 
     const configFile = await create(configPath);
@@ -34,7 +47,6 @@ export async function createProject(name: string, path: string) : Promise<Projec
 
     return new Project(name, path);
 }
-
 
 export async function loadHomeProjects(): Promise<Project[]> {
   const home = await homeDir();
