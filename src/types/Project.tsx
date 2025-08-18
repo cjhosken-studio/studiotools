@@ -1,3 +1,5 @@
+import { homeDir } from "@tauri-apps/api/path";
+import { readDir } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
 import { mkdir, writeTextFile, create } from "@tauri-apps/plugin-fs";
 
@@ -31,4 +33,24 @@ export async function createProject(name: string, path: string) : Promise<Projec
     await configFile.close();
 
     return new Project(name, path);
+}
+
+
+export async function loadHomeProjects(): Promise<Project[]> {
+  const home = await homeDir();
+  const projectsDir = `${home}projects`;
+
+  try {
+    const entries = await readDir(projectsDir);
+    const projects: Project[] = [];
+    for (const entry of entries) {
+      if (entry.name) {
+        const proj = await createProject(entry.name, await join(projectsDir, entry.name));
+        projects.push(proj);
+      }
+    }
+    return projects;
+  } catch {
+    return []; // no ~/projects folder
+  }
 }

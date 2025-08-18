@@ -13,19 +13,26 @@
     "check": "npm run lint && npm run test && cargo check"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@fortawesome/fontawesome-free": "^7.0.0",
     "@fortawesome/fontawesome-svg-core": "^7.0.0",
     "@fortawesome/free-solid-svg-icons": "^7.0.0",
     "@fortawesome/react-fontawesome": "^0.2.3",
+    "@mui/icons-material": "^7.3.1",
+    "@mui/material": "^7.3.1",
+    "@mui/x-tree-view": "^8.10.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2.3.2",
     "@tauri-apps/plugin-fs": "^2.4.1",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-store": "^2.3.0",
     "font-awesome": "^4.7.0",
     "jiti": "^2.5.1",
     "lint": "^0.8.19",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "tauri-plugin-store-api": "^0.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

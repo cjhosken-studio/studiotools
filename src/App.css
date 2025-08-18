@@ -91,3 +91,9 @@ button:hover {
   width: 28px;
   height: 28px;
 }
+
+.row {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+}

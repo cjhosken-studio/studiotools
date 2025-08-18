@@ -1,6 +1,6 @@
 import Project from "./Project.tsx"
-import { readDir, DirEntry } from "@tauri-apps/plugin-fs";
-import { join, dirname, sep } from "@tauri-apps/api/path";
+import { readDir, DirEntry, exists } from "@tauri-apps/plugin-fs";
+import { dirname } from "@tauri-apps/api/path";
 
 export default class Context {
     project: Project = new Project("", "");
@@ -17,14 +17,17 @@ export default class Context {
     }
 
     async setCwd(cwd: string) {
-        this.cwd = cwd;
-        
-        let project = await getProject(cwd);
-        if (!project) {
-            return;
-        }
+        if (await exists(cwd)) {
+            this.cwd = cwd;
+            
+            const project = await getProject(cwd);
 
-        this.project = project;
+            if (!project) {
+                return;
+            }
+
+            this.project = project;
+        }
     }
 };
 

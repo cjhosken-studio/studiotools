@@ -12,9 +12,19 @@
     "fs:default",
     "fs:allow-write-text-file",
     "fs:allow-create",
+    "store:allow-set",
+    "store:default",
+    "fs:allow-write",
     {
-      "identifier": "fs:write-all",
-      "allow": [{"path": "$HOME/**"}]
+      "identifier": "fs:scope",
+      "allow": [
+        {
+          "path": "$HOME/**"
+        },
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     }
   ]
 }
