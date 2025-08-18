@@ -1,3 +1,4 @@
+import React from "react";
 import { useAppContext } from "../ContextProvider";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import Context from "../types/Context";
@@ -60,7 +61,7 @@ function NavigationBar() {
         const parts = projectPath.split(/[\\/]/);
         const projectName = parts[parts.length - 1];
 
-        let project = await createProject(projectName, projectPath);
+        const project = await createProject(projectName, projectPath);
         context.setProject(project);
         setContext(new Context(context.project, context.cwd));
 

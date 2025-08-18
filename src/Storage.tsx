@@ -1,4 +1,3 @@
-// Storage.tsx
 import { exists } from "@tauri-apps/plugin-fs";
 import Context from "./types/Context";
 import Project from "./types/Project";

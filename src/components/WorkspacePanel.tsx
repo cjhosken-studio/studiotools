@@ -1,10 +1,10 @@
 import { useEffect } from "react";
-import { useAppContext } from "../ContextProvider";
+// import { useAppContext } from "../ContextProvider";
 
 import "./Workspace.css";
 
 export default function WorkspacePanel() {
-    const { context, projectList, setContext, setProjectList } = useAppContext();
+    // const { context, projectList, setContext, setProjectList } = useAppContext();
 
     useEffect(() => {
         (async () => {

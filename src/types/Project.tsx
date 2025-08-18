@@ -1,7 +1,7 @@
 import { homeDir } from "@tauri-apps/api/path";
 import { readDir } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
-import { mkdir, writeTextFile, create } from "@tauri-apps/plugin-fs";
+import { mkdir, create } from "@tauri-apps/plugin-fs";
 
 export default class Project {
     name: string = "";

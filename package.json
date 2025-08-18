@@ -10,7 +10,7 @@
     "tauri": "tauri",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "test": "echo \"No tests yet\" && exit 0",
-    "check": "npm run lint && npm run test && cargo check"
+    "check": "npm run lint && npm run test && cd src-tauri && cargo check"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
