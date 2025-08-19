@@ -3,9 +3,9 @@ import { useAppContext } from "../ContextProvider";
 import { RichTreeView } from "@mui/x-tree-view/RichTreeView";
 
 import "./ProjectTree.css";
-import { create, exists, mkdir, readDir, readTextFile, remove, writeTextFile } from "@tauri-apps/plugin-fs";
+import { create, exists, mkdir, readDir, readTextFile, remove } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
-import { TreeItem, TreeItemContent, TreeItemProps, TreeViewBaseItem, useTreeItem, UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view";
+import { TreeItem, TreeItemContent, TreeItemProps, TreeViewBaseItem, UseTreeItemContentSlotOwnProps } from "@mui/x-tree-view";
 import Box from '@mui/material/Box';
 import MenuItem from "@mui/material/MenuItem";
 import Menu from "@mui/material/Menu";
@@ -70,7 +70,7 @@ async function scanFolder(path: string): Promise<TreeViewBaseItem[]> {
         const fullPath = await join(path, e.name);
         if (await exists(fullPath)) {
             if (e.isDirectory && (await exists(fullPath))) {
-                let type = await getTypeFromFolder(fullPath);
+                const type = await getTypeFromFolder(fullPath);
                 
                 const subTree = await scanFolder(fullPath);
                 folders.push(buildTreeNode(fullPath, e.name, type, subTree));
@@ -206,7 +206,7 @@ const ProjectTreeItem = React.forwardRef(function ProjectTreeItem(
         const root = context.project.path.toLowerCase();
         const type = await getTypeFromFolder(id);
 
-        let context_menu_items = [];
+        const context_menu_items = [];
         let deletable = true;
 
         if (id === root) {
