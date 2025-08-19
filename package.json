@@ -9,8 +9,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "test": "echo \"No tests yet\" && exit 0",
-    "check": "npm run lint && npm run test && cd src-tauri && cargo check"
+    "check": "npm run lint && cd src-tauri && cargo check"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -23,20 +22,26 @@
     "@mui/material": "^7.3.1",
     "@mui/x-tree-view": "^8.10.0",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-clipboard-manager": "^2.3.0",
     "@tauri-apps/plugin-dialog": "^2.3.2",
     "@tauri-apps/plugin-fs": "^2.4.1",
-    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-opener": "^2.4.0",
+    "@tauri-apps/plugin-os": "^2.3.0",
+    "@tauri-apps/plugin-shell": "^2.3.0",
     "@tauri-apps/plugin-store": "^2.3.0",
     "font-awesome": "^4.7.0",
     "jiti": "^2.5.1",
+    "js-yaml": "^4.1.0",
     "lint": "^0.8.19",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "tauri-plugin-store-api": "^0.0.0"
+    "tauri-plugin-store-api": "^0.0.0",
+    "yaml-js": "^0.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@tauri-apps/cli": "^2",
+    "@types/js-yaml": "^4.0.9",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.6.0",

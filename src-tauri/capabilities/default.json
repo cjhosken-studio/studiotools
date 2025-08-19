@@ -15,16 +15,27 @@
     "store:allow-set",
     "store:default",
     "fs:allow-write",
+    "fs:allow-remove",
+    "clipboard-manager:allow-write-text",
     {
       "identifier": "fs:scope",
       "allow": [
         {
-          "path": "$HOME/**"
-        },
-        {
-          "path": "$APPDATA/**"
+          "path": "**"
         }
       ]
-    }
+    },
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [
+        {
+          "path":"**"
+        }
+      ]
+    },
+    "clipboard-manager:default",
+    "os:default",
+    "shell:default",
+    "shell:allow-execute"
   ]
 }
