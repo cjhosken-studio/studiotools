@@ -5,7 +5,7 @@ import { mkdir, create } from "@tauri-apps/plugin-fs";
 import yaml from "js-yaml";
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSearch, faPlus, faFolder, faTasks, faBolt, faShapes, faFire, faKitchenSet, faLightbulb, faPersonRunning, faFilm, faClapperboard, faBox, faBone, faImages, faHammer, faCameraRetro, faToolbox, faCubesStacked, faCube, faCubes, faSwatchbook, faArrowsToCircle, faObjectGroup } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faFire, faKitchenSet, faLightbulb, faPersonRunning, faFilm, faClapperboard, faBox, faBone, faImages, faHammer, faCameraRetro, faToolbox, faCubesStacked, faCube, faCubes, faSwatchbook, faArrowsToCircle, faObjectGroup } from "@fortawesome/free-solid-svg-icons";
 
 export default class Project {
   name: string = "";

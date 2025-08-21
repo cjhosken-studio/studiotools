@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { TreeNode } from "./ProjectTree";
 import { join } from "@tauri-apps/api/path";
-import { exists, mkdir } from "@tauri-apps/plugin-fs";
+import { exists } from "@tauri-apps/plugin-fs";
 import { createFolder } from "../../types/Project";
 
 import "./ProjectFolderDialog.css"
@@ -46,7 +46,7 @@ export default function ProjectFolderDialog({
     }
 
     const options = () => {
-        let subtype_options = []
+        const subtype_options = []
 
         if (node.type === "folder") {
             subtype_options.push(

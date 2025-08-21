@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../ContextProvider";
 
 import "./ProjectTree.css";
-import { create, exists, readDir, readTextFile, remove } from "@tauri-apps/plugin-fs";
+import { exists, readDir, remove } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
 import Context from "../../types/Context";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
