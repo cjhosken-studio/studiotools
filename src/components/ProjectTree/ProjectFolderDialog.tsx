@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { TreeNode } from "./ProjectTree";
 import { join } from "@tauri-apps/api/path";
 import { exists } from "@tauri-apps/plugin-fs";
