@@ -7,7 +7,7 @@ import TaskTree from "../trees/TaskTree";
 import AssetTree from "../trees/AssetTree";
 
 export default function Workspace() {
-    const { context, projectList, setContext, setProjectList } = useAppContext();
+    const { context } = useAppContext();
     const [isInTask, setIsInTask] = useState(false);
 
     useEffect(() => {

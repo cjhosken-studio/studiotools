@@ -2,7 +2,6 @@ import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, readDir, stat } from "@tauri-apps/plugin-fs";
 import Application from "./Application";
 import Context from "./Context";
-import { invoke } from "@tauri-apps/api/core";
 import { createVersionedFileInFolder, getVersion, removeVersionFromName } from "../utils/Version";
 
 export default class TaskFile {
@@ -41,7 +40,7 @@ export async function createTaskFile(application: Application, context: Context)
     application.launch(await join(app_folder, filename))
 }
 
-export async function openTaskFile(application: Application, taskFile: TaskFile, context: Context) {
+export async function openTaskFile(application: Application, taskFile: TaskFile) {
     application.launch(taskFile.path)
 }
 

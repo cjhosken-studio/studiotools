@@ -1,4 +1,3 @@
-import { basename, dirname } from "@tauri-apps/api/path";
 import TaskFile from "../types/TaskFile";
 
 
@@ -59,4 +58,8 @@ export function formatIconFromTaskfile(taskfile: TaskFile) {
     const folderName = parentFolder.split(/[\\/]/).pop() || "";
 
     return `/icons/${folderName}.png`;
+}
+
+export function formatIconFromAssetType(type: string) {
+    return `/icons/${type}.png`;
 }

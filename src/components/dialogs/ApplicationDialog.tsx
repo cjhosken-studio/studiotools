@@ -1,4 +1,3 @@
-import { remove } from "@tauri-apps/plugin-fs";
 import Context from "../../types/Context"
 
 import "./ApplicationDialog.css"
@@ -29,7 +28,7 @@ export default function ApplicationDialog({
 
     function handleAction(app: Application) {
         if (taskFile) {
-            openTaskFile(app, taskFile, context);
+            openTaskFile(app, taskFile);
         } else {
             createTaskFile(app, context)
         }

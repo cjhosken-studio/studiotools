@@ -1,5 +1,5 @@
-import { extname, join } from "@tauri-apps/api/path";
-import { exists, readDir } from "@tauri-apps/plugin-fs";
+import { extname } from "@tauri-apps/api/path";
+import { readDir } from "@tauri-apps/plugin-fs";
 
 export function getVersion(name: string) {
     let version = 0;
@@ -12,7 +12,7 @@ export function getVersion(name: string) {
 }
 
 export function getNextVersion(name: string) {
-    let version = getVersion(name);
+    const version = getVersion(name);
     return version + 1;
 }
 
