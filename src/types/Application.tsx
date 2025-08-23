@@ -1,8 +1,6 @@
-import { homeDir } from "@tauri-apps/api/path";
-import { exists, readDir, readTextFile } from "@tauri-apps/plugin-fs";
+import { exists, readDir } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
 import { platform } from "@tauri-apps/plugin-os";
-import { openPath } from "@tauri-apps/plugin-opener";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 export default class Application {
@@ -14,6 +12,7 @@ export default class Application {
     constructor(name: string, icon: string | null, executable: string, files: string[]) {
         this.name = name;
         this.icon = icon;
+        this.files = files;
         this.executable = executable;
     }
 

@@ -1,4 +1,3 @@
-import { remove } from "@tauri-apps/plugin-fs";
 import Context from "../../types/Context"
 
 import "./ConfigureProjectDialog.css"

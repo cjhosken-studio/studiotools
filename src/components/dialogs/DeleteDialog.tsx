@@ -45,7 +45,7 @@ export default function DeleteDialog({
                         refresh();
                     }}>Delete</button>
 
-                    <button onClick={() => setPathToDelete(null)}> Cancel </button>
+                    <button onClick={() => onClose()}> Cancel </button>
                 </div>
             </div>
         </div>
