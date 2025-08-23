@@ -42,6 +42,7 @@ main {
   justify-content: center;
   width: 100vw;
   flex-grow: 1;
+  background-color: #000000;
 }
 
 .iconButton {
