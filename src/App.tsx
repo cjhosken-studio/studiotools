@@ -3,8 +3,8 @@ import NavigationBar from "./components/layouts/NavigationBar";
 import "./App.css";
 import { ContextProvider } from "./ContextProvider";
 import ProjectTreePanel from "./components/trees/ProjectTree";
-import WorkspacePanel from "./components/layouts/WorkspacePanel";
 import PropertiesPanel from "./components/layouts/Properties";
+import Workspace from "./components/layouts/Workspace";
 
 function App() {
   return (
@@ -14,7 +14,7 @@ function App() {
         <main>
           <div className="row">
             <ProjectTreePanel/>
-            <WorkspacePanel/>
+            <Workspace/>
             <PropertiesPanel/>
           </div>
         </main>

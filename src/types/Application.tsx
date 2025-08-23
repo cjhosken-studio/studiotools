@@ -7,17 +7,16 @@ export default class Application {
     name: string = "";
     icon: string | null = null;
     executable: string = "";
+    id: string = "";
     files: string[] = [];
+    version: string = "";
 
-    constructor(name: string, icon: string | null, executable: string, files: string[]) {
+    constructor(name: string, icon: string | null, executable: string, files: string[], id: string) {
         this.name = name;
         this.icon = icon;
         this.files = files;
+        this.id = id;
         this.executable = executable;
-    }
-
-    async launch(path: string = "") {
-        invoke("launch", { executable: this.executable, path: path })
     }
 
     setName(name: string) {
@@ -33,7 +32,15 @@ export default class Application {
     }
 
     getIcon() {
-        return convertFileSrc(this.icon!)
+        if (this.icon) {
+            return convertFileSrc(this.icon!)
+        } 
+
+        return `/icons/${this.id}.png`
+    }
+
+    async launch(path: string = "") {
+        invoke("launch", { executable: this.executable, id: this.id, path: path })
     }
 }
 
@@ -57,7 +64,7 @@ export async function loadDefaultApplications(): Promise<Application[]> {
 
                 if (await exists(executable)) {
                     applications.push(
-                        new Application(`${entry.name}`, null, executable, files)
+                        new Application(`${entry.name}`, null, executable, files, "blender")
                     )
                 }
             }
@@ -75,22 +82,21 @@ export async function loadDefaultApplications(): Promise<Application[]> {
                 if (!entry.isDirectory) continue;
 
                 const versionBin = await join(sidefxRoot, entry.name, "bin")
-                const icon = await join(sidefxRoot, entry.name, "houdini", "pic", "minimizedicon.png")
 
-                if (await exists(versionBin) && await exists(icon)) {
+                if (await exists(versionBin)) {
                     const base_exe = await join(versionBin, "houdini.exe")
                     applications.push(
-                        new Application(`${entry.name}`, icon, base_exe, files)
+                        new Application(`${entry.name}`, null, base_exe, files, "houdini")
                     )
 
                     const core_exe = await join(versionBin, "houdinicore.exe")
                     applications.push(
-                        new Application(`${entry.name} Core`, icon, core_exe, files)
+                        new Application(`${entry.name} Core`, null, core_exe, files, "houdini")
                     )
 
                     const fx_exe = await join(versionBin, "houdinifx.exe")
                     applications.push(
-                        new Application(`${entry.name} FX`, icon, fx_exe, files)
+                        new Application(`${entry.name} FX`, null, fx_exe, files, "houdini")
                     )
                 }
             }
@@ -114,7 +120,7 @@ export async function loadDefaultApplications(): Promise<Application[]> {
                         const base_exe = await join(foundryRoot, entry.name, `${match[0]}.exe`);
 
                         applications.push(
-                            new Application(`${entry.name}`, null, base_exe, files)
+                            new Application(`${entry.name}`, null, base_exe, files, "nuke")
                         )
                     }
 
@@ -122,7 +128,7 @@ export async function loadDefaultApplications(): Promise<Application[]> {
                     const x_exe = await join(foundryRoot, entry.name, "NukeXApp.exe")
 
                     applications.push(
-                        new Application(`${entry.name} X`, null, x_exe, files)
+                        new Application(`${entry.name} X`, null, x_exe, files, "nuke")
                     )
                 }
             }

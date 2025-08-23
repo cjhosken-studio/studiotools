@@ -1,14 +1,42 @@
 use std::process::Command;
-
+use std::path::Path;
 
 #[tauri::command]
-fn launch(executable: String, path: String) {
+fn launch(executable: String, id: String, path: String) {
+    let submodules_path = Path::new("./tools").canonicalize().unwrap();
     #[cfg(target_os = "windows")]
     {
-        Command::new("cmd")
-            .args(&["/C", &executable, &path])
-            .spawn()
-            .unwrap();
+        if id == "blender" {
+            let load_script = Path::new("./tools/blender_studiotools/load.py").canonicalize().unwrap();
+            Command::new("cmd")
+                .env("PYTHONPATH", submodules_path)
+                .args(&[
+                    "/C",
+                    &executable,
+                    &path.as_str(),
+                    "--python-use-system-env",
+                    "--python", load_script.to_str().unwrap()
+                ])
+                .spawn()
+                .unwrap();
+        } else if id == "usdview" {
+            Command::new("cmd")
+                .env("PATH","c:/Program Files/Side Effects Software/Houdini 20.5.332/bin" )
+                .args(&[
+                    "/C",
+                    "hython",
+                    "c:/Program Files/Side Effects Software/Houdini 20.5.332/bin/usdview",
+                    &path
+                ])
+                .spawn()
+                .unwrap();
+        } 
+        else {
+            Command::new("cmd")
+                .args(&["/C", &executable, &path])
+                .spawn()
+                .unwrap();
+        }
     }
 }
 

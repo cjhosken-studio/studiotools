@@ -36,6 +36,7 @@
     "clipboard-manager:default",
     "os:default",
     "shell:default",
-    "shell:allow-execute"
+    "shell:allow-execute",
+    "fs:allow-app-meta"
   ]
 }

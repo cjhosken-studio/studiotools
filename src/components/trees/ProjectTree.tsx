@@ -28,7 +28,6 @@ type MenuAction = {
 }
 
 const isInPath = ( nodeId: string, cwd: string | null) => {
-    console.log("checking:", nodeId, ">", cwd);
     if (!cwd) return false;
     return cwd.startsWith(nodeId)
 }

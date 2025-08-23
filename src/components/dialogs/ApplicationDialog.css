@@ -1,0 +1,59 @@
+#application-dialog {
+  padding: 1em;
+  background-color: #131313;
+  border: solid 1px #333333;
+  width: 80%;
+  height: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1em;
+  box-shadow: black 0px 0px 20px;
+  border-radius: 15px;
+}
+
+#application-dialog #header {
+    display: flex;
+    flex-direction: row;
+    align-items: end;
+    justify-content: end;
+    width: 100%;
+}
+
+#application-dialog #close {
+  background-color: transparent;
+}
+
+#app-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.appItem {
+  height: 8em;
+  margin: 1em;
+  aspect-ratio: 1;
+  border: solid 1px #333333;
+  border-radius: 2em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.appItem:hover {
+  cursor: pointer;
+  background-color: #333333;
+}
+
+.appInfo {
+  font-size: 0.8em;
+}
+
+.appIcon {
+  width: 50%;
+}
