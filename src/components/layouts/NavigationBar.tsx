@@ -1,8 +1,8 @@
-import React from "react";
-import { useAppContext } from "../ContextProvider";
+import React, { useEffect, useState } from "react";
+import { useAppContext } from "../../ContextProvider";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import Context from "../types/Context";
-import { createProject } from "../types/Project";
+import Context from "../../types/Context";
+import { createProject } from "../../types/Project";
 import { homeDir } from "@tauri-apps/api/path";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSearch, faPlus } from "@fortawesome/free-solid-svg-icons";
@@ -10,7 +10,13 @@ import "./NavigationBar.css"
 
 function NavigationBar() {
     const { context, projectList, setContext, setProjectList } = useAppContext();
-    
+    const[cwd, setCwd] = useState<string>("");
+
+
+    useEffect(() => {
+        setCwd(context.cwd);
+    }, [context])
+
     const handleProjectChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const project = projectList.find(p => p.path === e.target.value);
         if (!project) return;
@@ -23,6 +29,7 @@ function NavigationBar() {
 
         await context.setCwd(newCwd);
         setContext(new Context(context.project, context.cwd));
+        setCwd(e.target.value);
     };
 
     const searchCwd = async () => {
@@ -81,14 +88,16 @@ function NavigationBar() {
                     <option key={p.path} value={p.path}>{p.name}</option>
                 ))}
             </select>
-            <input
-                id="cwd-input"
-                placeholder="Current Working Directory"
-                value={context.cwd}
-                onChange={handleCwdChange}
-            />
-            <button id="search-button" className="iconButton" onClick={() => searchCwd()}><FontAwesomeIcon icon={faSearch} /></button>
-            <button id="create-button" className="iconButton" onClick={() => createNewProject()}><FontAwesomeIcon icon={faPlus} /></button>
+            <div id="cwd-container">
+                <button id="search-button" className="iconButton" onClick={() => searchCwd()}><FontAwesomeIcon icon={faSearch} /></button>
+                <input
+                    id="cwd-input"
+                    placeholder="Current Working Directory"
+                    value={cwd}
+                    onChange={handleCwdChange}
+                />
+                <button id="create-button" className="iconButton" onClick={() => createNewProject()}><FontAwesomeIcon icon={faPlus} /></button>
+            </div>
         </nav>
     )
 }

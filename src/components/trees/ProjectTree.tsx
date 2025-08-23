@@ -8,7 +8,10 @@ import Context from "../../types/Context";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openPath } from '@tauri-apps/plugin-opener';
 import Project, { getIconFromTypes, getSubtypeFromFolder, getTypeFromFolder } from "../../types/Project";
-import ProjectFolderDialog from "./ProjectFolderDialog";
+import ProjectFolderDialog from "../dialogs/ProjectFolderDialog";
+import {platform} from "@tauri-apps/plugin-os";
+import DeleteDialog from "../dialogs/DeleteDialog";
+import ConfigureProjectDialog from "../dialogs/ConfigureProjectDialog";
 
 export type TreeNode = {
     id: string;
@@ -87,25 +90,24 @@ function TreeItem({
 
     return (
         <div>
-            <li className={`tree-item ${expanded ? "expanded" : ""}`}>
+            <li className={`treeItem ${expanded ? "expanded" : ""}`}>
                 <div
-                    className={`tree-label ${isSelected ? "selected" : ""}`}
+                    className={`treeLabel ${isSelected ? "selected" : ""}`}
                     onContextMenu={(e) => {
                         e.preventDefault();
                         onRightClick(e, node);
                     }}
-                    style={{ cursor: node.hasChildren ? "pointer" : "default" }}
                 >
-                    <span className="tree-arrow"
+                    {node.type !== "task" && node.hasChildren && (
+                    <span className="treeArrow"
                         onClick={(e) => {
                             e.stopPropagation();
                             onSelect(node.id);
                             if (node.hasChildren) toggleExpand();
                         }}
-                    >
-                        {node.type !== "task" && node.hasChildren ? (expanded ? "▼" : "▶") : " "}
-                    </span>
-                    <div
+                    >▶</span>
+                    )}
+                    <div className={`treeInfo ${node.type == "task" || !node.hasChildren ? "offset" : ""}`}
                         onClick={(e) => {
                             e.stopPropagation();
                             onSelect(node.id);
@@ -118,7 +120,7 @@ function TreeItem({
                     </div>
 
                 </div>
-                <ul className={`tree-children ${expanded ? "open" : ""}`}>
+                <ul className={`treeChildren ${expanded ? "open" : ""}`}>
                     {children?.map((child) => (
                         <TreeItem key={child.id} node={child} loadChildren={loadChildren} reloadCounter={reloadCounter} selectedId={selectedId} onSelect={onSelect} onRightClick={onRightClick} defaultExpanded={isInPath(node.id, selectedId)}/>
                     ))}
@@ -149,7 +151,7 @@ export default function ProjectTreePanel() {
     const [reloadCounter, setReloadCounter] = useState(0);
 
     useEffect(() => {
-        const handleClick = () => setMenuPosition(null);
+        const handleClick = () => {setMenuPosition(null)};
         window.addEventListener("click", handleClick);
         return () => window.removeEventListener("click", handleClick);
     }, []);
@@ -227,7 +229,9 @@ export default function ProjectTreePanel() {
         }
 
         actions.push({ label: "Copy Path", onClick: async () => await writeText(node.id) });
-        actions.push({ label: "Open In FileSystem", onClick: async () => await openPath(node.id) });
+        const prettyPlatform = platform().charAt(0).toUpperCase() + platform().slice(1);
+
+        actions.push({ label: `Open in ${prettyPlatform}`, onClick: async () => await openPath(node.id) });
 
         if (node.type !== "project") {
             actions.push({ label: "Delete", onClick: () => handleFolderDelete(node) });
@@ -257,19 +261,23 @@ export default function ProjectTreePanel() {
 
     return (
         <div id="project-tree-panel">
-            <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+            <ul id="project-tree">
                 <TreeItem key={root.id} node={root} loadChildren={loadChildren} reloadCounter={reloadCounter} selectedId={selectedId} onSelect={handleSelect} onRightClick={handleRightClick} defaultExpanded={isInPath(root.id, selectedId)} />
             </ul>
             {menuPosition && (
-                <div className="dialogContainer">
+                <div className="popup">
                     <ul
-                        className="context-menu"
+                        className="menu"
                         style={{
                             position: "fixed",
                             top: menuPosition.y,
                             left: menuPosition.x,
                             listStyle: "none",
-                            backgroundColor: "black",
+                            backgroundColor: "#131313",
+                            borderWidth: "1px",
+                            borderStyle: "solid",
+                            borderRadius: "0em 1em 1em 1em",
+                            borderColor: "#333333" ,
                             zIndex: 1000,
                         }}
                     >
@@ -277,7 +285,7 @@ export default function ProjectTreePanel() {
                             <li
                                 key={action.label}
                                 onClick={() => handleMenuAction(action)}
-                                style={{ padding: "5px 15px", cursor: "pointer", whiteSpace: "nowrap" }}
+                                className="menuItem"
                             >
                                 {action.label}
                             </li>
@@ -286,39 +294,14 @@ export default function ProjectTreePanel() {
                 </div>
             )}
             {nodeToCreateFolder && createFolderType && (
-                <div className="dialogContainer">
                 <ProjectFolderDialog node={nodeToCreateFolder} type={createFolderType} refresh={refresh} onClose={() => { setNodetoCreateFolder(null); }} />
-                </div>
             )}
             {pathToDelete && (
-                <div className="dialogContainer">
-                    <div id="project-delete-dialog">
-                        <p>
-                        Are you sure you want to delete {pathToDelete}? 
-                        This cannot be undone.
-                        </p>
-                        <div className="row">
-                                                    <button onClick={async () => {
-                            if (context.cwd == pathToDelete) {
-                                context.setCwd(context.project.path)
-                                setContext(new Context(context.project, context.cwd))
-                            }
-                            await remove(pathToDelete, { recursive: true })
-                            setPathToDelete(null);
-                            refresh();
-                        }}>Delete</button>
-
-                        <button onClick={()=>setPathToDelete(null)}> Cancel </button>
-                        </div>
-                    </div>
-                </div>
+                <DeleteDialog pathToDelete={pathToDelete} setPathToDelete={setPathToDelete} context={context} setContext={setContext} refresh={refresh} onClose={() => {setPathToDelete(null)}}/>
             )}
-            {
-                projectToConfigure && (
-                    <div>
-                    </div>
-                )
-            }
+            {projectToConfigure && (
+                <ConfigureProjectDialog context={context} onClose={() => setProjectToConfigure(null)}/>
+             )}
         </div>
     )
 }

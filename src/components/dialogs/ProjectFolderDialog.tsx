@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TreeNode } from "./ProjectTree";
+import { TreeNode } from "../trees/ProjectTree";
 import { join } from "@tauri-apps/api/path";
 import { exists } from "@tauri-apps/plugin-fs";
 import { createFolder } from "../../types/Project";
@@ -23,7 +23,7 @@ export default function ProjectFolderDialog({
     const [folderExists, setFolderExists] = useState(false);
 
     useEffect(() => {
-        const checkExists = async() => {
+        const checkExists = async () => {
             if (!name) return setFolderExists(false);
             const fullPath = await join(node.id, name)
             const doesExist = await exists(fullPath);
@@ -58,9 +58,9 @@ export default function ProjectFolderDialog({
             if (node.subtype == "asset") {
                 subtype_options.push(
                     "scan",
-                    "model", 
-                    "texture", 
-                    "lookdev", 
+                    "model",
+                    "texture",
+                    "lookdev",
                     "rig",
                     "fx"
                 )
@@ -69,7 +69,7 @@ export default function ProjectFolderDialog({
             if (node.subtype == "shot") {
                 subtype_options.push(
                     "track",
-                    "layout", 
+                    "layout",
                     "animate",
                     "fx",
                     "light",
@@ -85,38 +85,40 @@ export default function ProjectFolderDialog({
     }
 
     return (
-        <div id="project-folder-dialog">
-            <input
-                type="text"
-                placeholder="Name"
-                value={name}
-                onChange={(e) => {
-                        setName(e.target.value); 
+        <div className="dialog">
+            <div id="project-folder-dialog">
+                <input
+                    type="text"
+                    placeholder="Name"
+                    value={name}
+                    onChange={(e) => {
+                        setName(e.target.value);
                         setUserTyped(true);
                     }}
-                autoFocus
-            />
-            {type !== "folder" && (
-                <select
-                    value={subtype}
-                    onChange={(e) => setSubtype(e.target.value)}
-                >
-                    {options().map((opt) => (
-                        <option key={opt} value={opt}>
-                            {opt}
-                        </option>
-                    ))}
-                </select>
-            )
+                    autoFocus
+                />
+                {type !== "folder" && (
+                    <select
+                        value={subtype}
+                        onChange={(e) => setSubtype(e.target.value)}
+                    >
+                        {options().map((opt) => (
+                            <option key={opt} value={opt}>
+                                {opt}
+                            </option>
+                        ))}
+                    </select>
+                )
 
-            }
-            <div className="row">
-            <button onClick={onClose}>Cancel</button>
-            <button onClick={handleCreate} disabled={
-                !name || folderExists
-            }>Create</button>
+                }
+                <div className="row">
+                    <button onClick={onClose}>Cancel</button>
+                    <button onClick={handleCreate} disabled={
+                        !name || folderExists
+                    }>Create</button>
+                </div>
+
             </div>
-
         </div>
     )
 }
