@@ -1,6 +1,22 @@
 use std::process::Command;
 use std::path::Path;
 use std::fs;
+use std::env;
+
+#[cfg(windows)]
+const SEP: &str = ";";
+#[cfg(unix)]
+const SEP: &str = ":";
+
+fn append_env_var(key: &str, value: &str) -> String {
+    let current = env::var(key).unwrap_or_default();
+    if current.is_empty() {
+        value.to_string()
+    } else {
+        format!("{}{}{}", current, SEP, value)
+    }
+}
+
 
 #[tauri::command]
 fn symlink(asset: String, symlink: String) -> Result<(), String> {
@@ -20,14 +36,16 @@ fn symlink(asset: String, symlink: String) -> Result<(), String> {
 
 #[tauri::command]
 fn launch(executable: String, id: String, path: String) {
-    let submodules_path = Path::new("./tools").canonicalize().unwrap();
+    let submodules_path = append_env_var("PYTHONPATH", "./tools");
+    let parent = Path::new(&executable).parent().unwrap();
+
+
     #[cfg(target_os = "windows")]
     {
         if id == "blender" {
             let load_script = Path::new("./tools/blender_studiotools/load.py").canonicalize().unwrap();
             let python_requirements = Path::new("./tools/blender_studiotools/requirements.txt").canonicalize().unwrap();
             
-            let parent = Path::new(&executable).parent().unwrap();
             let version_dir = fs::read_dir(parent).ok()
                 .and_then(|entries| {
                     entries.filter_map(|entry| entry.ok())
@@ -57,7 +75,7 @@ fn launch(executable: String, id: String, path: String) {
                 .unwrap();
 
             Command::new("cmd")
-                .env("PYTHONPATH", submodules_path)
+                .env("PYTHONPATH", submodules_path.to_string())
                 .args(&[
                     "/C",
                     &executable,
@@ -67,7 +85,29 @@ fn launch(executable: String, id: String, path: String) {
                 ])
                 .spawn()
                 .unwrap();
-                
+        }
+        else if id == "houdini" {
+            let load_script = Path::new("./tools/houdini_studiotools/load.py").canonicalize().unwrap();
+            let toolbar_path = append_env_var("HOUDINI_TOOLBAR_PATH", &format!("./tools/houdini_studiotools/houdini/toolbar{}&", SEP));
+            let otlscan_path = append_env_var("HOUDINI_OTLSCAN_PATH", &format!("./tools/houdini_studiotools/houdini/otls{}&", SEP));
+            let menu_path = append_env_var("HOUDINI_MENU_PATH", &format!("./tools/houdini_studiotools/houdini{}&", SEP));
+            let hython = parent.join("hython.exe");
+            
+
+            Command::new("cmd")
+                .args(&["/C", hython.to_str().unwrap(), load_script.to_str().unwrap(), &path])
+                .spawn()
+                .unwrap();
+
+            Command::new("cmd")
+                .env("PYTHONPATH", submodules_path.to_string())
+                .env("HOUDINI_TOOLBAR_PATH", toolbar_path.to_string())
+                .env("HOUDINI_OTLSCAN_PATH", otlscan_path.to_string())
+                .env("HOUDINI_MENU_PATH", menu_path.to_string())
+                .args(&["/C", &executable, &path])
+                .spawn()
+                .unwrap();
+
         } else if id == "usdview" {
             Command::new("cmd")
                 .env("PATH","c:/Program Files/Side Effects Software/Houdini 20.5.332/bin" )

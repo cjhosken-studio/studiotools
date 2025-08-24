@@ -2,7 +2,7 @@ import { join } from "@tauri-apps/api/path";
 import { exists, mkdir, readDir, stat } from "@tauri-apps/plugin-fs";
 import Application from "./Application";
 import Context from "./Context";
-import { createVersionedFileInFolder, getVersion, removeVersionFromName } from "../utils/Version";
+import { getNewTaskFileName, getVersion, removeVersionFromName } from "../utils/Version";
 
 export default class TaskFile {
     name: string = "";
@@ -34,7 +34,7 @@ export async function createTaskFile(application: Application, context: Context)
 
     const ext = application.files[0];
     const basename = `scene${ext}`
-    const filename = await createVersionedFileInFolder(basename, app_folder);
+    const filename = await getNewTaskFileName(basename, wip);
 
     application.launch(await join(app_folder, filename))
 }

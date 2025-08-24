@@ -113,7 +113,7 @@ export default function TaskTree(
                     <thead>
                         <tr>
                             <th></th>
-                            <th>File</th>
+                            <th onClick={() => handleSort("name")}>File</th>
                             <th onClick={() => handleSort("version")}>Version</th>
                             <th onClick={() => handleSort("size")}>Size</th>
                             <th onClick={() => handleSort("modified")}>Modified</th>

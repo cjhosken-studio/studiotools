@@ -1,6 +1,3 @@
-[submodule "src-tauri/src/submodules/blender_studiotools"]
-	path = src-tauri/src/submodules/blender_studiotools
-	url = https://github.com/cjhosken-studio/blender_studiotools
 [submodule "src-tauri/tools/blender_studiotools"]
 	path = src-tauri/tools/blender_studiotools
 	url = https://github.com/cjhosken-studio/blender_studiotools

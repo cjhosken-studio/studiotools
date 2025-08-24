@@ -17,11 +17,11 @@ export function getNextVersion(name: string) {
 }
 
 
-export async function createVersionedFileInFolder(basename: string, folder: string) {
+export async function getNewTaskFileName(basename: string, wip : string) {
     const ext = await extname(basename);
     const name = basename.slice(0, -(ext.length+1));
 
-    const version = await getNextGlobalVersion(folder);
+    const version = await getNextGlobalVersion(wip);
     const padded = String(version).padStart(3, "0");
 
     return `${name}_v${padded}.${ext}`;
@@ -35,24 +35,30 @@ export function removeVersionFromName(basename: string): string {
 }
 
 
-export async function getLatestVersion(folder: string): Promise<number> {
-    const entries = await readDir(folder);
+export async function getLatestVersionRecursive(folder: string): Promise<number> {
     let maxVersion = 0;
 
-    for (const entry of entries) {
-        if (!entry.isFile) continue;
-
-        const match = entry.name.match(/_v(\d+)/);
-        if (match) {
-            const ver = parseInt(match[1], 10);
-            if (ver > maxVersion) maxVersion = ver;
+    async function checkFolder(path: string) {
+        const entries = await readDir(path);
+        for (const entry of entries) {
+            const fullPath = `${path}/${entry.name}`;
+            if (entry.isFile) {
+                const match = entry.name.match(/_v(\d+)/);
+                if (match) {
+                    const ver = parseInt(match[1], 10);
+                    if (ver > maxVersion) maxVersion = ver;
+                }
+            } else if (entry.isDirectory) {
+                await checkFolder(fullPath); // recursively check subfolder
+            }
         }
     }
 
+    await checkFolder(folder);
     return maxVersion;
 }
 
 export async function getNextGlobalVersion(folder: string): Promise<number> {
-    const latest = await getLatestVersion(folder);
+    const latest = await getLatestVersionRecursive(folder);
     return latest + 1;
 }
