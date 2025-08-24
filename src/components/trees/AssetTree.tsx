@@ -16,6 +16,13 @@ import { exists, remove } from "@tauri-apps/plugin-fs";
 import { useAppContext } from "../../ContextProvider";
 
 export default function AssetTree(
+    {
+        selectedAsset,
+        setSelectedAsset
+    } : {
+        selectedAsset: Asset | null,
+        setSelectedAsset: (asset: Asset) => void;
+    }
 ) {
     const { context, setContext } = useAppContext();
 
@@ -137,7 +144,7 @@ export default function AssetTree(
                     </thead>
                     <tbody>
                         {sortedAssets.map((asset, i) => (
-                            <tr key={i} onContextMenu={(e) => handleRightClick(e, asset)} onDoubleClick={() => launchUSDView(asset)} className={`assetItem ${asset.published ? "published" : ""}`}>
+                            <tr key={i} onClick={(e) => setSelectedAsset(asset)} onContextMenu={(e) => handleRightClick(e, asset)} onDoubleClick={() => launchUSDView(asset)} className={`assetItem ${asset.published ? "published" : ""} ${selectedAsset && asset.path == selectedAsset.path ? "selected" : ""}`}>
                                 <td><img src={formatIconFromAssetType(asset.type)} /></td>
                                 <td>{asset.name}</td>
                                 <td>{formatVersion(asset.version)}</td>

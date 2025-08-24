@@ -1,19 +1,18 @@
 #project-folder-dialog {
   padding: 1em;
-  background-color: #131313;
-  border: solid 1px #333333;
+  background-color: var(--dark-background-color);
+  border: solid 1px var(--medium-grey);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   text-align: center;
   gap: 1em;
-  box-shadow: black 0px 0px 20px;
   border-radius: 15px;
 }
 
 #project-folder-dialog input {
-  border-bottom: solid 2px #333333;
+  border-bottom: solid 2px var(--medium-grey);
   border-radius: 0px;
 }
 

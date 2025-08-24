@@ -1,7 +1,7 @@
 #configure-project-dialog {
   padding: 1em;
-  background-color: #131313;
-  border: solid 1px #333333;
+  background-color: var(--dark-background-color);
+  border: solid 1px var(--medium-grey);
   width: 90%;
   height: 90%;
   display: flex;
@@ -10,7 +10,6 @@
   align-items: center;
   text-align: center;
   gap: 1em;
-  box-shadow: black 0px 0px 20px;
   border-radius: 15px;
 }
 

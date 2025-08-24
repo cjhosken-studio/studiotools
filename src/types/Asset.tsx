@@ -2,6 +2,7 @@ import { join } from "@tauri-apps/api/path";
 import { exists, readDir, readTextFile, stat } from "@tauri-apps/plugin-fs";
 import { getVersion, removeVersionFromName } from "../utils/Version";
 import yaml from "js-yaml";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 export default class Asset {
     name: string = "";
@@ -12,8 +13,9 @@ export default class Asset {
     root: string = "";
     type: string = "";
     published: boolean = false;
+    thumbnail: string;
 
-    constructor(name: string = "", path: string = "", version: number = 0, size: number = 0, modified: Date | null = null, root: string = "", type: string="", published = false) {
+    constructor(name: string = "", path: string = "", version: number = 0, size: number = 0, modified: Date | null = null, root: string = "", type: string="", published = false, thumbnail="") {
         this.name = name;
         this.path = path;
         this.version = version;
@@ -22,6 +24,15 @@ export default class Asset {
         this.root = root;
         this.type = type;
         this.published = published;
+        this.thumbnail = thumbnail;
+    }
+
+    getThumbnail() {
+        if (this.thumbnail) {
+            return convertFileSrc(this.thumbnail!)
+        } 
+
+        return ""
     }
 }
 
@@ -40,6 +51,8 @@ export async function loadAssets(task: string) : Promise<Asset[]> {
         const type = await getTypeFromAssetPath(fullPath);
         // Check if published
 
+        const thumbnailPath = await join(fullPath, "thumbnail.png");
+
         let is_published = false;
 
         const publishedEntry = await join(published, cleanName);
@@ -51,7 +64,7 @@ export async function loadAssets(task: string) : Promise<Asset[]> {
         const stats = await stat(root);
 
         assets.push(
-            new Asset(cleanName, fullPath, version ?? 0, stats.size ?? 0, stats.mtime ? new Date(stats.mtime) : null, root, type, is_published)
+            new Asset(cleanName, fullPath, version ?? 0, stats.size ?? 0, stats.mtime ? new Date(stats.mtime) : null, root, type, is_published, thumbnailPath)
         )
     }
 

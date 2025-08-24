@@ -5,7 +5,7 @@ nav {
     align-items: center;
     justify-content: center;
     gap: 1em;
-    border-bottom: #333333 1px solid;
+    border-bottom: var(--medium-grey) 1px solid;
 }
 
 #project-select {
@@ -21,8 +21,8 @@ nav {
     flex-direction: row;
     width: 40%;
     border-radius: 2em;
-    background-color: #131313;
-    border: solid #333333 1px;
+    background-color: var(--dark-background-color);
+    border: solid var(--medium-grey) 1px;
 }
 
 #cwd-input {

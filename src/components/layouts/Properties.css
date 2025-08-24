@@ -1,4 +1,4 @@
-#properties-panel {
+#properties {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -7,4 +7,21 @@
     width: 50%;
     height: 100%;
 
+}
+
+#properties-panel {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 1em 0.5em;
+    height: 100%;
+    width: 100%;
+    background-color: var(--dark-background-color);
+    border-radius: 1em;
+    border: solid 1px var(--medium-grey);
+}
+
+#properties-panel img {
+    width: 100%;
 }

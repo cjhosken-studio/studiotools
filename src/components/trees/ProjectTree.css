@@ -30,13 +30,13 @@
 }
 
 #project-tree::-webkit-scrollbar-track {
-  background: #111111;
+  background: var(--scroll-background);
   /* track (background) */
   border-radius: 10px;
 }
 
 #project-tree::-webkit-scrollbar-thumb {
-  background-color: #333333;
+  background-color: var(--medium-grey);
   /* draggable handle */
   border-radius: 10px;
 }
@@ -58,12 +58,12 @@
 }
 
 .treeLabel:hover {
-  background-color: #333333;
+  background-color: var(--medium-grey);
   cursor: pointer;
 }
 
 .treeLabel.selected {
-  background-color: rgb(20, 60, 130);
+  background-color: var(--primary-color);
 }
 
 .treeLabel .offset {
@@ -119,6 +119,6 @@
 
 .popup .menu .menuItem:hover {
   cursor: pointer;
-  background-color: #333333;
+  background-color: var(--medium-grey);
   border-radius: 1em;
 }

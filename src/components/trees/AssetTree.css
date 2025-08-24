@@ -6,9 +6,9 @@
 
 #asset-tree-panel {
     margin: 1em 0.5em;
-    background-color: #131313;
+    background-color: var(--dark-grey);
     border-radius: 1em;
-    border: solid 1px #333;
+    border: solid 1px var(--medium-grey);
 }
 
 #asset-tree-table {
@@ -30,7 +30,7 @@
 #asset-tree-table td {
     font-size: 0.8em;
     padding: 0em 1em;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--medium-grey);
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
@@ -46,14 +46,18 @@
 }
 
 #asset-tree-table tbody tr:nth-child(even) {
-    background: #252525; /* subtle zebra striping */
+    background: var(--table-zebra-background); /* subtle zebra striping */
 }
 
 #asset-tree-table tbody tr:hover {
     cursor: pointer;
-    background: rgb(31, 71, 145); /* soft green highlight */
+    background: var(--medium-grey); /* soft green highlight */
 }
 
 #asset-tree-table tbody tr.published {
-    background-color: rgba(37, 151, 51, 0.486);
+    background-color: var(--published-color);
+}
+
+#asset-tree-table tbody tr.selected {
+    background-color: var(--primary-color);
 }

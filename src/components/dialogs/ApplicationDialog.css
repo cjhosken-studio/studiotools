@@ -1,7 +1,7 @@
 #application-dialog {
   padding: 1em;
-  background-color: #131313;
-  border: solid 1px #333333;
+  background-color: var(--dark-background-color);
+  border: solid 1px var(--medium-grey);
   width: 80%;
   height: 80%;
   display: flex;
@@ -9,7 +9,6 @@
   align-items: center;
   text-align: center;
   gap: 1em;
-  box-shadow: black 0px 0px 20px;
   border-radius: 15px;
 }
 
@@ -37,7 +36,7 @@
   height: 8em;
   margin: 1em;
   aspect-ratio: 1;
-  border: solid 1px #333333;
+  border: solid 1px var(--medium-grey);
   border-radius: 2em;
   display: flex;
   flex-direction: column;
@@ -47,7 +46,7 @@
 
 .appItem:hover {
   cursor: pointer;
-  background-color: #333333;
+  background-color: var(--medium-grey);
 }
 
 .appInfo {
