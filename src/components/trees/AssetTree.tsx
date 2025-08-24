@@ -13,17 +13,12 @@ import { platform } from "@tauri-apps/plugin-os";
 import { openPath } from "@tauri-apps/plugin-opener";
 import { removeVersionFromName } from "../../utils/Version";
 import { exists, remove } from "@tauri-apps/plugin-fs";
+import { useAppContext } from "../../ContextProvider";
 
 export default function AssetTree(
-    {
-        context,
-        setContext
-
-    }: {
-        context: Context
-        setContext: (context: Context) => void;
-    }
 ) {
+    const { context, setContext } = useAppContext();
+
     const [assets, setAssets] = useState<Asset[]>([]);
 
     const [sortKey, setSortKey] = useState<"name" | "version" | "size" | "modified">("modified");
@@ -72,13 +67,15 @@ export default function AssetTree(
     });
 
     async function refresh() {
-            const assets = await loadAssets(context.cwd);
-            setAssets(assets);
-     }
+        const assets = await loadAssets(context.cwd);
+        setAssets(assets);
+    }
 
     useEffect(() => {
         refresh();
-    });
+        const interval = setInterval(refresh, 5000); // every 5 seconds
+        return () => clearInterval(interval);
+    }, [context.cwd, setAsPublished]);
 
     async function launchUSDView(asset: Asset) {
         invoke("launch", { executable: "usdview", id: "usdview", path: await join(asset.path, "stage.usd") })
@@ -119,12 +116,15 @@ export default function AssetTree(
             await remove(symlinkPath);
         }
 
-        invoke("symlink", {asset: asset.path, symlink: symlinkPath});
+        invoke("symlink", { asset: asset.path, symlink: symlinkPath });
     }
 
     return (
         <div id="asset-tree">
             <div id="asset-tree-panel">
+                <div>
+                    <button onClick={() => {refresh()}}> Refresh </button>
+                </div>
                 <table id="asset-tree-table">
                     <thead>
                         <tr>

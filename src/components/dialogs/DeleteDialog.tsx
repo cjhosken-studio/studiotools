@@ -37,8 +37,6 @@ export default function DeleteDialog({
                 <div className="row">
                     <button onClick={async () => {
 
-                        console.log(pathToDelete);
-
                         if (context.cwd == pathToDelete) {
                             context.setCwd(context.project.path)
                             setContext(new Context(context.project, context.cwd))

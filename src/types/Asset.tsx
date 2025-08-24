@@ -38,9 +38,6 @@ export async function loadAssets(task: string) : Promise<Asset[]> {
 
         const root = await getRootFromAssetPath(fullPath);
         const type = await getTypeFromAssetPath(fullPath);
-
-        const stats = await stat(root);
-
         // Check if published
 
         let is_published = false;
@@ -50,6 +47,8 @@ export async function loadAssets(task: string) : Promise<Asset[]> {
             const published_version = await getVersionFromAssetPath(publishedEntry);
             is_published = published_version === version;
         }
+
+        const stats = await stat(root);
 
         assets.push(
             new Asset(cleanName, fullPath, version ?? 0, stats.size ?? 0, stats.mtime ? new Date(stats.mtime) : null, root, type, is_published)

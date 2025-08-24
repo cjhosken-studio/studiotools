@@ -20,9 +20,9 @@ export default function Workspace() {
     return (
         <div id="workspace-panel">
             {isInTask && (
-                <TaskTree context={context} setContext={setContext}/>
+                <TaskTree/>
             )}
-            <AssetTree context={context} setContext={setContext}/>
+            <AssetTree/>
         </div>
     );
 }

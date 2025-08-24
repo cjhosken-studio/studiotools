@@ -22,7 +22,6 @@ export default class TaskFile {
 
 
 export async function createTaskFile(application: Application, context: Context) {
-    console.log(application);
     const id = application.id;
     const cwd = context.cwd;
     const wip = await join(cwd, "wip")
@@ -59,11 +58,11 @@ export async function loadTaskFiles(task: string) : Promise<TaskFile[]> {
                 await scanDir(fullPath);
             } else if (extensions.some(ext => entry.name.endsWith(ext))) {
                 try {
-                    const stats = await stat(fullPath);
                     const version = getVersion(entry.name);
 
                     const cleanName = removeVersionFromName(entry.name);
 
+                    const stats = await stat(fullPath);
                     files.push(
                         new TaskFile(
                             cleanName, 

@@ -32,6 +32,7 @@ export default function ApplicationDialog({
         } else {
             createTaskFile(app, context)
         }
+        onClose();
     }
 
     const filteredApplications = taskFile 

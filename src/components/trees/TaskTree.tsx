@@ -11,17 +11,12 @@ import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openPath } from "@tauri-apps/plugin-opener";
 import DeleteDialog from "../dialogs/DeleteDialog";
 import { dirname } from "@tauri-apps/api/path";
+import { useAppContext } from "../../ContextProvider";
 
 export default function TaskTree(
-    {
-        context,
-        setContext
-
-    }: {
-        context: Context
-        setContext: (context: Context) => void;
-    }
 ) {
+    const { context, setContext } = useAppContext();
+    
     const [files, setFiles] = useState<TaskFile[]>([]);
     const [openApplication, setOpenApplication] = useState(false);
     const [taskFile, setTaskFile] = useState<TaskFile | null>(null);
@@ -78,7 +73,9 @@ export default function TaskTree(
 
     useEffect(() => {
         refresh();
-    });
+        const interval = setInterval(refresh, 5000); // every 5 seconds
+        return () => clearInterval(interval);
+    }, [context.cwd, openTaskFile]);
 
     function openTaskFile(taskfile: TaskFile) {
         setTaskFile(taskfile);
@@ -111,6 +108,7 @@ export default function TaskTree(
             <div id="task-tree-panel">
                 <div id="task-header">
                     <button onClick={() => { setTaskFile(null); setOpenApplication(true) }}> Create + </button>
+                    <button onClick={() => {refresh()}}> Refresh </button>
                 </div>
                 <table id="task-tree-table">
                     <thead>

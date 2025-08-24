@@ -78,11 +78,6 @@ export async function createFolder(path: string, type: string, subtype: string =
     `type: ${type}\nsubtype: ${subtype}\n`
   ));
   await folderConfigFile.close();
-
-  console.log("path:", path)
-  console.log("type:", type)
-  console.log("subtype:", subtype)
-
   if (type == "taskarea") {
     if (subtype == "asset") {
       await createFolder(await join(path, "model"), "task", "model")

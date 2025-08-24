@@ -28,8 +28,6 @@ export function ContextProvider({ children } : { children: ReactNode }) {
         (async () => {
             const storedCtx = await loadStoredContext();
 
-            console.log("context:", storedCtx?.cwd)
-
             if (storedCtx) setContextState(storedCtx);
 
             const storedProjects = await loadStoredProjects?.();
