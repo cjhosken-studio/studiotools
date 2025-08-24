@@ -29,9 +29,11 @@ export async function createVersionedFileInFolder(basename: string, folder: stri
 
 
 export function removeVersionFromName(basename: string): string {
-    // Regex matches "_v" followed by 3+ digits before the extension
-    return basename.replace(/_v\d+(?=\.[^.]+$)/, "");
+    // Matches "_v" followed by 1+ digits at the end, optionally before an extension
+    const cleanName = basename.replace(/_v\d+(?=(\.[^.]+)?$)/, "");
+    return cleanName;
 }
+
 
 export async function getLatestVersion(folder: string): Promise<number> {
     const entries = await readDir(folder);

@@ -1,6 +1,7 @@
 import { join } from "@tauri-apps/api/path";
-import { readDir, stat } from "@tauri-apps/plugin-fs";
+import { exists, readDir, readTextFile, stat } from "@tauri-apps/plugin-fs";
 import { getVersion, removeVersionFromName } from "../utils/Version";
+import yaml from "js-yaml";
 
 export default class Asset {
     name: string = "";
@@ -9,22 +10,25 @@ export default class Asset {
     version: number = 0;
     modified: Date | null = null;
     root: string = "";
-    rootType: string = "";
+    type: string = "";
+    published: boolean = false;
 
-    constructor(name: string = "", path: string = "", version: number = 0, size: number = 0, modified: Date | null = null, root: string = "", rootType: string="") {
+    constructor(name: string = "", path: string = "", version: number = 0, size: number = 0, modified: Date | null = null, root: string = "", type: string="", published = false) {
         this.name = name;
         this.path = path;
         this.version = version;
         this.size = size;
         this.modified = modified;
         this.root = root;
-        this.rootType = rootType;
+        this.type = type;
+        this.published = published;
     }
 }
 
 export async function loadAssets(task: string) : Promise<Asset[]> {
     const assets : Asset[] = [];
     const versions = await join(task, "versions");
+    const published = await join(task, "published");
 
     const entries = await readDir(versions);
     for (const entry of entries) {
@@ -32,15 +36,67 @@ export async function loadAssets(task: string) : Promise<Asset[]> {
         const version = getVersion(entry.name);
         const cleanName = removeVersionFromName(entry.name);
 
-        const root = await join(fullPath, "stage.usd")
-        const rootType = "usd";
+        const root = await getRootFromAssetPath(fullPath);
+        const type = await getTypeFromAssetPath(fullPath);
 
         const stats = await stat(root);
 
+        // Check if published
+
+        let is_published = false;
+
+        const publishedEntry = await join(published, cleanName);
+        if (await exists(publishedEntry)) {
+            const published_version = await getVersionFromAssetPath(publishedEntry);
+            is_published = published_version === version;
+        }
+
         assets.push(
-            new Asset(cleanName, fullPath, version ?? 0, stats.size ?? 0, stats.mtime ? new Date(stats.mtime) : null, root, rootType)
+            new Asset(cleanName, fullPath, version ?? 0, stats.size ?? 0, stats.mtime ? new Date(stats.mtime) : null, root, type, is_published)
         )
     }
 
     return assets;
+}
+
+export async function getVersionFromAssetPath(asset_path: string): Promise<number> {
+    try {
+        const metadataYamlPath = await join(asset_path, "metadata.yaml");
+        if (!(await exists(metadataYamlPath))) return 0;
+
+        const content = await readTextFile(metadataYamlPath);
+        const data = yaml.load(content) as { version: number };
+        return data.version ?? 0;
+    } catch (err) {
+        console.error("Error reading metadata.yaml:", err);
+        return 0;
+    }
+}
+
+export async function getRootFromAssetPath(asset_path: string): Promise<string> {
+    try {
+        const metadataYamlPath = await join(asset_path, "metadata.yaml");
+        if (!(await exists(metadataYamlPath))) return "";
+
+        const content = await readTextFile(metadataYamlPath);
+        const data = yaml.load(content) as { root: string };
+        return data.root ?? "";
+    } catch (err) {
+        console.error("Error reading metadata.yaml:", err);
+        return "folder";
+    }
+}
+
+export async function getTypeFromAssetPath(asset_path: string): Promise<string> {
+    try {
+        const metadataYamlPath = await join(asset_path, "metadata.yaml");
+        if (!(await exists(metadataYamlPath))) return "usd";
+
+        const content = await readTextFile(metadataYamlPath);
+        const data = yaml.load(content) as { type: string };
+        return data.type ?? "usd";
+    } catch (err) {
+        console.error("Error reading folder.yaml:", err);
+        return "usd";
+    }
 }

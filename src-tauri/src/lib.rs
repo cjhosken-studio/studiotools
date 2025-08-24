@@ -1,5 +1,22 @@
 use std::process::Command;
 use std::path::Path;
+use std::fs;
+
+#[tauri::command]
+fn symlink(asset: String, symlink: String) -> Result<(), String> {
+    let assetPath = Path::new(&asset);
+    let linkPath = Path::new(&symlink);
+    
+    
+    #[cfg(target_os = "windows")]
+    {
+        if let Err(e) = std::os::windows::fs::symlink_dir(assetPath, linkPath) {
+            return Err(format!("failed to create symlink: {}", e));
+        }
+    }
+
+    Ok(())
+}
 
 #[tauri::command]
 fn launch(executable: String, id: String, path: String) {
@@ -8,6 +25,37 @@ fn launch(executable: String, id: String, path: String) {
     {
         if id == "blender" {
             let load_script = Path::new("./tools/blender_studiotools/load.py").canonicalize().unwrap();
+            let python_requirements = Path::new("./tools/blender_studiotools/requirements.txt").canonicalize().unwrap();
+            
+            let parent = Path::new(&executable).parent().unwrap();
+            let version_dir = fs::read_dir(parent).ok()
+                .and_then(|entries| {
+                    entries.filter_map(|entry| entry.ok())
+                        .find(|entry| {
+                            entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
+                                && entry.file_name().to_string_lossy().chars().next().unwrap_or(' ').is_ascii_digit()
+                        })
+                })
+                .expect("Could not find Blender version directory");
+            
+            let blender_python_path = version_dir.path()
+                .join("python")
+                .join("bin")
+                .join("python.exe");
+
+            Command::new("cmd")
+                .args(&[
+                    "/C",
+                    blender_python_path.to_str().unwrap(),
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r", 
+                    python_requirements.to_str().unwrap()
+                ])
+                .spawn()
+                .unwrap();
+
             Command::new("cmd")
                 .env("PYTHONPATH", submodules_path)
                 .args(&[
@@ -19,6 +67,7 @@ fn launch(executable: String, id: String, path: String) {
                 ])
                 .spawn()
                 .unwrap();
+                
         } else if id == "usdview" {
             Command::new("cmd")
                 .env("PATH","c:/Program Files/Side Effects Software/Houdini 20.5.332/bin" )
@@ -50,7 +99,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![launch])
+        .invoke_handler(tauri::generate_handler![launch, symlink])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

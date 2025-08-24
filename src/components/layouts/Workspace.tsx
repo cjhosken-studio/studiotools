@@ -7,7 +7,7 @@ import TaskTree from "../trees/TaskTree";
 import AssetTree from "../trees/AssetTree";
 
 export default function Workspace() {
-    const { context } = useAppContext();
+    const { context, setContext } = useAppContext();
     const [isInTask, setIsInTask] = useState(false);
 
     useEffect(() => {
@@ -20,9 +20,9 @@ export default function Workspace() {
     return (
         <div id="workspace-panel">
             {isInTask && (
-                <TaskTree context={context}/>
+                <TaskTree context={context} setContext={setContext}/>
             )}
-            <AssetTree context={context}/>
+            <AssetTree context={context} setContext={setContext}/>
         </div>
     );
 }

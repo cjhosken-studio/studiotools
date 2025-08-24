@@ -12,6 +12,7 @@ import ProjectFolderDialog from "../dialogs/ProjectFolderDialog";
 import {platform} from "@tauri-apps/plugin-os";
 import DeleteDialog from "../dialogs/DeleteDialog";
 import ConfigureProjectDialog from "../dialogs/ConfigureProjectDialog";
+import { MenuAction } from "../../types/Menu";
 
 export type TreeNode = {
     id: string;
@@ -20,11 +21,6 @@ export type TreeNode = {
     subtype: string | "custom";
     children?: TreeNode[];
     hasChildren?: boolean;
-}
-
-type MenuAction = {
-    label: string
-    onClick: () => void;
 }
 
 const isInPath = ( nodeId: string, cwd: string | null) => {
@@ -228,8 +224,8 @@ export default function ProjectTreePanel() {
         }
 
         actions.push({ label: "Copy Path", onClick: async () => await writeText(node.id) });
+        
         const prettyPlatform = platform().charAt(0).toUpperCase() + platform().slice(1);
-
         actions.push({ label: `Open in ${prettyPlatform}`, onClick: async () => await openPath(node.id) });
 
         if (node.type !== "project") {

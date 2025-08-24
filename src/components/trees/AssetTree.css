@@ -40,6 +40,7 @@
     height: 1em;
 }
 
+
 #asset-tree-table tbody tr {
     transition: background 0.2s ease;
 }
@@ -51,4 +52,8 @@
 #asset-tree-table tbody tr:hover {
     cursor: pointer;
     background: rgb(31, 71, 145); /* soft green highlight */
+}
+
+#asset-tree-table tbody tr.published {
+    background-color: rgba(37, 151, 51, 0.486);
 }
