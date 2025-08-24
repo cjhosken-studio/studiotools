@@ -4,13 +4,13 @@ use std::fs;
 
 #[tauri::command]
 fn symlink(asset: String, symlink: String) -> Result<(), String> {
-    let assetPath = Path::new(&asset);
-    let linkPath = Path::new(&symlink);
+    let asset_path = Path::new(&asset);
+    let link_path = Path::new(&symlink);
     
     
     #[cfg(target_os = "windows")]
     {
-        if let Err(e) = std::os::windows::fs::symlink_dir(assetPath, linkPath) {
+        if let Err(e) = std::os::windows::fs::symlink_dir(asset_path, link_path) {
             return Err(format!("failed to create symlink: {}", e));
         }
     }

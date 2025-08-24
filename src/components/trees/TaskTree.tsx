@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 
 import "./TaskTree.css";
 import TaskFile, { loadTaskFiles } from "../../types/TaskFile";
-import Context from "../../types/Context";
 import ApplicationDialog from "../dialogs/ApplicationDialog";
 import { formatFileSize, formatIconFromTaskfile, formatTime, formatVersion } from "../../utils/Format";
 import { MenuAction } from "../../types/Menu";

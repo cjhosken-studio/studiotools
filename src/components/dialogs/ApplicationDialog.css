@@ -1,6 +1,6 @@
 #application-dialog {
   padding: 1em;
-  background-color: var(--dark-background-color);
+  background-color: var(--dark-grey);
   border: solid 1px var(--medium-grey);
   width: 80%;
   height: 80%;

@@ -1,6 +1,6 @@
 #project-folder-dialog {
   padding: 1em;
-  background-color: var(--dark-background-color);
+  background-color: var(--dark-grey);
   border: solid 1px var(--medium-grey);
   display: flex;
   flex-direction: column;

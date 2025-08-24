@@ -9,7 +9,7 @@ import PropertiesPanel from "./Properties";
 import Asset from "../../types/Asset";
 
 export default function Workspace() {
-    const { context, setContext } = useAppContext();
+    const { context } = useAppContext();
     const [isInTask, setIsInTask] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
 

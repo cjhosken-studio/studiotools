@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import "./AssetTree.css";
-import Context from "../../types/Context";
 import Asset, { loadAssets } from "../../types/Asset";
 import { invoke } from "@tauri-apps/api/core";
 import { dirname, join } from "@tauri-apps/api/path";
@@ -144,7 +143,7 @@ export default function AssetTree(
                     </thead>
                     <tbody>
                         {sortedAssets.map((asset, i) => (
-                            <tr key={i} onClick={(e) => setSelectedAsset(asset)} onContextMenu={(e) => handleRightClick(e, asset)} onDoubleClick={() => launchUSDView(asset)} className={`assetItem ${asset.published ? "published" : ""} ${selectedAsset && asset.path == selectedAsset.path ? "selected" : ""}`}>
+                            <tr key={i} onClick={() => setSelectedAsset(asset)} onContextMenu={(e) => handleRightClick(e, asset)} onDoubleClick={() => launchUSDView(asset)} className={`assetItem ${asset.published ? "published" : ""} ${selectedAsset && asset.path == selectedAsset.path ? "selected" : ""}`}>
                                 <td><img src={formatIconFromAssetType(asset.type)} /></td>
                                 <td>{asset.name}</td>
                                 <td>{formatVersion(asset.version)}</td>

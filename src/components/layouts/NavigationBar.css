@@ -21,7 +21,7 @@ nav {
     flex-direction: row;
     width: 40%;
     border-radius: 2em;
-    background-color: var(--dark-background-color);
+    background-color: var(--dark-grey);
     border: solid var(--medium-grey) 1px;
 }
 
