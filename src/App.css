@@ -56,14 +56,13 @@ main {
   width: 100vw;
   flex-grow: 1;
   background-color: var(--dark-background-color);
+  overflow-x: auto;
 }
 
 .iconButton {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 24px;
-  height: 100%;
 }
 
 select {
@@ -111,28 +110,54 @@ button:hover {
   display: flex;
   flex-direction: row;
   width: 100%;
+  height: 100%;
 }
 
 .column {
   display: flex;
   flex-direction: column;
   height: 100%;
+  width: 100%;
 }
 
 .dialog {
   left: 0;
   top: 0;
   position: absolute;
-  z-index: 1000;
+  z-index: 1001;
   width: 100vw;
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: transparent;
+  background-color: black;
   backdrop-filter: blur(5px);
 }
 
 .link {
   color: var(--primary-color);
+}
+
+
+
+
+*::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scroll-background);
+  /* track (background) */
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--medium-grey);
+  /* draggable handle */
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }

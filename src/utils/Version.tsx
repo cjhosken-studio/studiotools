@@ -29,7 +29,6 @@ export async function getNewTaskFileName(basename: string, wip : string) {
 
 
 export function removeVersionFromName(basename: string): string {
-    // Matches "_v" followed by 1+ digits at the end, optionally before an extension
     const cleanName = basename.replace(/_v\d+(?=(\.[^.]+)?$)/, "");
     return cleanName;
 }

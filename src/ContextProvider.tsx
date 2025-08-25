@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { loadStoredContext, loadStoredProjects, storeContext, storeProjectList } from "./Storage";
 import Context from "./types/Context"
 import Project from "./types/Project";
-import { loadStoredContext, loadStoredProjects, storeContext, storeProjectList } from "./Storage";
 
 const AppContext = createContext<{
     context: Context;
@@ -9,6 +9,7 @@ const AppContext = createContext<{
     setContext: (ctx: Context) => void
     setProjectList: (list: Project[]) => void
 } | null>(null)
+
 
 export function ContextProvider({ children } : { children: ReactNode }) {
     const [context, setContextState] = useState<Context>(new Context(new Project("", ""), ""))
@@ -30,7 +31,7 @@ export function ContextProvider({ children } : { children: ReactNode }) {
 
             if (storedCtx) setContextState(storedCtx);
 
-            const storedProjects = await loadStoredProjects?.();
+            const storedProjects = await loadStoredProjects();
             if (storedProjects) setProjectListState(storedProjects)
         })();
     }, []);
@@ -41,6 +42,7 @@ export function ContextProvider({ children } : { children: ReactNode }) {
         </AppContext.Provider>
     )
 }
+
 
 export function useAppContext() {
     const ctx = useContext(AppContext)

@@ -2,7 +2,7 @@ import TaskFile from "../types/TaskFile";
 
 
 export function formatTime(date: Date | null): string {
-    if (!date) return "none"
+    if (!date) return "N/A"
 
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
 

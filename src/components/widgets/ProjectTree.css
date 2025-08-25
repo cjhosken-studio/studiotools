@@ -24,27 +24,6 @@
   /* horizontal scroll only when needed */
 }
 
-#project-tree::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-
-#project-tree::-webkit-scrollbar-track {
-  background: var(--scroll-background);
-  /* track (background) */
-  border-radius: 10px;
-}
-
-#project-tree::-webkit-scrollbar-thumb {
-  background-color: var(--medium-grey);
-  /* draggable handle */
-  border-radius: 10px;
-}
-
-#project-tree::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
 /* Tree items */
 
 .treeLabel {
@@ -109,7 +88,6 @@
   opacity: 1;
   transform: translateY(0);
 }
-
 
 .popup .menu .menuItem {
   font-size: 0.8em;

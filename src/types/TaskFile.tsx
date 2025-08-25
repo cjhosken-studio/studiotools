@@ -3,6 +3,7 @@ import { exists, mkdir, readDir, stat } from "@tauri-apps/plugin-fs";
 import Application from "./Application";
 import Context from "./Context";
 import { getNewTaskFileName, getVersion, removeVersionFromName } from "../utils/Version";
+import { getTypeFromFolder } from "./Project";
 
 export default class TaskFile {
     name: string = "";
@@ -44,7 +45,11 @@ export async function openTaskFile(application: Application, taskFile: TaskFile)
 }
 
 export async function loadTaskFiles(task: string) : Promise<TaskFile[]> {
+
     const files : TaskFile[] = [];
+
+        if (await getTypeFromFolder(task) !== "task") return files;
+        
     const wip = await join(task, "wip");
 
     const extensions = [".blend", ".hip", ".hipnc"];

@@ -2,9 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../ContextProvider";
 
 import "./ProjectTree.css";
-import { exists, readDir } from "@tauri-apps/plugin-fs";
+import { readDir } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
-import Context from "../../types/Context";
+import Context, { getProjectFromCwd } from "../../types/Context";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import { openPath } from '@tauri-apps/plugin-opener';
 import Project, { getIconFromTypes, getSubtypeFromFolder, getTypeFromFolder } from "../../types/Project";
@@ -33,6 +33,7 @@ function TreeItem({
     loadChildren,
     selectedId,
     onSelect,
+    onClick,
     onRightClick,
     reloadCounter,
     defaultExpanded = false,
@@ -41,39 +42,39 @@ function TreeItem({
     loadChildren: (node: TreeNode) => Promise<TreeNode[]>;
     selectedId: string | null;
     onSelect: (id: string) => void;
+    onClick: () => void;
     onRightClick: (e: React.MouseEvent, node: TreeNode) => void;
     reloadCounter: number;
     defaultExpanded?: boolean;
 }) {
 
     const [expanded, setExpanded] = useState(defaultExpanded);
-    const [children, setChildren] = useState<TreeNode[] | null>(node.children ?? null);
+    const [children, setChildren] = useState<TreeNode[] | null>(null);
 
     const loadNodeChildren = async () => {
-        if (node.type === "task") return;
+        if (!node.hasChildren || node.type === "task") return;
         const result = await loadChildren(node);
         setChildren(result);
     }
 
     useEffect(() => {
-        if (defaultExpanded && children === null && node.hasChildren) {
+        if (defaultExpanded) {
             loadNodeChildren();
         }
-    }, [defaultExpanded, node])
+    }, [defaultExpanded])
 
     useEffect(() => {
-        if (children !== null) {
+        if (expanded) {
             loadNodeChildren();
         }
     }, [reloadCounter])
 
     const toggleExpand = async () => {
-        if (node.type === "task") return;
+        if (!node.hasChildren || node.type === "task") return;
 
-        if (!expanded && node.hasChildren) {
-            if (children === null) {
-                const result = await loadChildren(node);
-                setChildren(result);
+        if (!expanded) {
+            if (!children) {
+                loadNodeChildren();
             }
             setExpanded(true);
         } else {
@@ -97,6 +98,7 @@ function TreeItem({
                     <span className="treeArrow"
                         onClick={(e) => {
                             e.stopPropagation();
+                            onClick();
                             onSelect(node.id);
                             if (node.hasChildren) toggleExpand();
                         }}
@@ -104,6 +106,7 @@ function TreeItem({
                     )}
                     <div className={`treeInfo ${node.type == "task" || !node.hasChildren ? "offset" : ""}`}
                         onClick={(e) => {
+                            onClick();
                             e.stopPropagation();
                             onSelect(node.id);
                         }}
@@ -117,7 +120,7 @@ function TreeItem({
                 </div>
                 <ul className={`treeChildren ${expanded ? "open" : ""}`}>
                     {children?.map((child) => (
-                        <TreeItem key={child.id} node={child} loadChildren={loadChildren} reloadCounter={reloadCounter} selectedId={selectedId} onSelect={onSelect} onRightClick={onRightClick} defaultExpanded={isInPath(node.id, selectedId)}/>
+                        <TreeItem key={child.id} node={child} loadChildren={loadChildren} reloadCounter={reloadCounter} selectedId={selectedId} onSelect={onSelect} onClick={onClick} onRightClick={onRightClick} defaultExpanded={isInPath(node.id, selectedId)}/>
                     ))}
                 </ul>
             </li>
@@ -146,14 +149,15 @@ export default function ProjectTreePanel() {
     const [reloadCounter, setReloadCounter] = useState(0);
 
     useEffect(() => {
-        const handleClick = () => {setMenuPosition(null)};
+        const handleClick = () => { setMenuPosition(null); };
         window.addEventListener("click", handleClick);
         return () => window.removeEventListener("click", handleClick);
     }, []);
 
     useEffect(() => {
         setSelectedId(context.cwd ?? null);
-    }, [context.cwd]);
+        refresh();
+    }, [context]);
 
     const refresh = () => {
         if (context.project) {
@@ -168,38 +172,38 @@ export default function ProjectTreePanel() {
         }
     }
 
-    useEffect(() => {
-        refresh();
-    }, [context.project]);
-
-
     const loadChildren = async (node: TreeNode): Promise<TreeNode[]> => {
         const entires = await readDir(node.id);
-        const children: TreeNode[] = [];
+        
+        const childPromises = entires
+            .filter((e) => e.isDirectory)
+            .map(async (e) => {
+                const path = await join(node.id, e.name);
 
-        for (const e of entires) {
-            if (!e.isDirectory) continue;
-            const fullPath = await join(node.id, e.name);
-            if (!(await exists(fullPath))) continue;
+                const subEntires = await readDir(path);
+                const hasChildren = subEntires.some((sub) => sub.isDirectory)
 
-            const subEntires = await readDir(fullPath);
-            const hasChildren = subEntires.some(sub => sub.isDirectory) && node.type !== "task";
-            children.push({
-                id: fullPath,
-                label: e.name,
-                subtype: await getSubtypeFromFolder(fullPath),
-                type: await getTypeFromFolder(fullPath),
-                hasChildren: hasChildren,
+                const [subtype, type] = await Promise.all([
+                    getSubtypeFromFolder(path),
+                    getTypeFromFolder(path)
+                ]);
+
+                return {
+                    subtype,
+                    id: path,
+                    label: e.name,
+                    type,
+                    hasChildren
+                } as TreeNode;
             });
-
-        }
+        
+        const children = await Promise.all(childPromises);
         return children;
     }
 
     const handleSelect = async (id: string) => {
         setSelectedId(id);
-        await context.setCwd(id)
-        setContext(new Context(context.project, context.cwd));
+        setContext(new Context(await getProjectFromCwd(id), id));
     };
 
     const handleRightClick = (e: React.MouseEvent, node: TreeNode) => {
@@ -257,7 +261,7 @@ export default function ProjectTreePanel() {
     return (
         <div id="project-tree-panel">
             <ul id="project-tree">
-                <TreeItem key={root.id} node={root} loadChildren={loadChildren} reloadCounter={reloadCounter} selectedId={selectedId} onSelect={handleSelect} onRightClick={handleRightClick} defaultExpanded={isInPath(root.id, selectedId)} />
+                <TreeItem key={root.id} node={root} loadChildren={loadChildren} reloadCounter={reloadCounter} selectedId={selectedId} onSelect={handleSelect} onRightClick={handleRightClick} onClick={() => {setMenuPosition(null)}} defaultExpanded={isInPath(root.id, selectedId)} />
             </ul>
             {menuPosition && (
                 <div className="popup">

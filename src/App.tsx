@@ -1,9 +1,9 @@
-import NavigationBar from "./components/layouts/NavigationBar";
-
 import "./App.css";
 import { ContextProvider } from "./ContextProvider";
-import ProjectTreePanel from "./components/trees/ProjectTree";
-import Workspace from "./components/layouts/Workspace";
+import ProjectTreePanel from "./components/widgets/ProjectTree";
+import Workspace from "./components/widgets/Workspace";
+import NavigationBar from "./components/widgets/NavigationBar";
+
 
 function App() {
   return (

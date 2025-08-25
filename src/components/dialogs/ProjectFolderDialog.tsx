@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TreeNode } from "../trees/ProjectTree";
+import { TreeNode } from "../widgets/ProjectTree";
 import { join } from "@tauri-apps/api/path";
 import { exists } from "@tauri-apps/plugin-fs";
 import { createFolder } from "../../types/Project";

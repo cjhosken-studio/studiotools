@@ -17,21 +17,20 @@ export default class Context {
     }
 
     async setCwd(cwd: string) {
-        if (await exists(cwd)) {
-            this.cwd = cwd;
-            
-            const project = await getProject(cwd);
-
-            if (!project) {
-                return;
-            }
-
-            this.project = project;
-        }
+        this.cwd = cwd;
     }
 };
 
-async function getProject(cwd: string): Promise<Project | null> {
+export async function isValidCwd(cwd: string) {
+    if (await exists(cwd)) {
+        const project = await getProjectFromCwd(cwd);
+        return project;
+    }
+
+    return false;
+}
+
+export async function getProjectFromCwd(cwd: string): Promise<Project> {
     let current = cwd;
 
     while (true) {
@@ -46,7 +45,7 @@ async function getProject(cwd: string): Promise<Project | null> {
 
         const parent = await dirname(current);
         if (parent == current) {
-            return null;
+            return new Project("", "");
         }
 
         current = parent;

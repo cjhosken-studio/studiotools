@@ -3,15 +3,17 @@ import { useEffect, useState } from "react";
 import "./Workspace.css";
 import { useAppContext } from "../../ContextProvider";
 import { getTypeFromFolder } from "../../types/Project";
-import TaskTree from "../trees/TaskTree";
-import AssetTree from "../trees/AssetTree";
+import TaskListView from "./TaskListView";
+import AssetListView from "./AssetListView";
 import PropertiesPanel from "./Properties";
 import Asset from "../../types/Asset";
+import TaskFile from "../../types/TaskFile";
 
 export default function Workspace() {
     const { context } = useAppContext();
     const [isInTask, setIsInTask] = useState(false);
     const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+    const [selectedTaskFile, setSelectedTaskFile] = useState<TaskFile | null>(null);
 
     useEffect(() => {
         const checkTask = async () => {
@@ -19,17 +21,14 @@ export default function Workspace() {
         };
         checkTask();
         setSelectedAsset(null);
-    }, [context.cwd]);
+    }, [context]);
 
     return (
         <div id="workspace-panel">
             <div className="row">
-
                 <div className="column">
-                    {isInTask && (
-                        <TaskTree />
-                    )}
-                    <AssetTree selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset} />
+                    {isInTask && (<TaskListView selectedTaskFile={selectedTaskFile} setSelectedTaskFile={setSelectedTaskFile}/>)}
+                    <AssetListView selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset} />
                 </div>
                 {selectedAsset && (<PropertiesPanel asset={selectedAsset} />)}
             </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../ContextProvider";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import Context from "../../types/Context";
+import Context, { getProjectFromCwd, isValidCwd } from "../../types/Context";
 import { createProject } from "../../types/Project";
 import { homeDir } from "@tauri-apps/api/path";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,47 +10,41 @@ import "./NavigationBar.css"
 
 function NavigationBar() {
     const { context, projectList, setContext, setProjectList } = useAppContext();
-    const[cwd, setCwd] = useState<string>("");
-
+    const [displayCwd, setDisplayCwd] = useState<string>("");
 
     useEffect(() => {
-        setCwd(context.cwd);
+        setDisplayCwd(context.cwd);
     }, [context])
 
-    const handleProjectChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const project = projectList.find(p => p.path === e.target.value);
-        if (!project) return;
-
-        setContext(new Context(project, project.path))
+        if (project) setContext(new Context(project, project.path));
     }
 
     const handleCwdChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newCwd = e.target.value;
+        const cwd = e.target.value;
+        
+        setDisplayCwd(cwd);
 
-        await context.setCwd(newCwd);
-        setContext(new Context(context.project, context.cwd));
-        setCwd(e.target.value);
+        if (await isValidCwd(cwd)) setContext(new Context(await getProjectFromCwd(cwd), cwd))
     };
 
-    const searchCwd = async () => {
+    const setCwd = async () => {
         const cwd = await open({
             defaultPath: await homeDir(),
             directory: true,
             multiple: false,
         });
 
-        if (!cwd || typeof cwd !== "string") {
-            return;
-        }
+        if (!cwd || !isValidCwd(cwd)) return;
 
-        const oldProject = context.project.path
+        const lastProject = context.project;
+        const cwdProject = await getProjectFromCwd(cwd);
 
-        await context.setCwd(cwd)
-        setContext(new Context(context.project, context.cwd));
+        setContext(new Context(cwdProject, cwd));
 
-        if (oldProject != context.project.path) {
-            const updated = [context.project, ...projectList.filter(p => p.path !== context.project.path)];
-            setProjectList(updated);
+        if (lastProject.path != cwdProject.path) {
+            setProjectList([context.project, ...projectList.filter(p => p.path !== cwdProject.path)]);
         }
     }
 
@@ -61,26 +55,21 @@ function NavigationBar() {
             filters: []
         });
 
-        if (!projectPath || typeof projectPath !== "string") {
-            return;
-        }
+        if (!projectPath) return;
 
         const parts = projectPath.split(/[\\/]/);
         const projectName = parts[parts.length - 1];
 
         const project = await createProject(projectName, projectPath);
-        context.setProject(project);
-        setContext(new Context(context.project, context.cwd));
-
-        const updated = [project, ...projectList.filter(p => p.path !== project.path)];
-        setProjectList(updated);
+        setContext(new Context(project, project.path));
+        setProjectList([project, ...projectList.filter(p => p.path !== project.path)]);
     }
 
     return (
         <nav>
             <select
                 id="project-select"
-                value={context.project.path}
+                value={context.project!.path}
                 onChange={handleProjectChange}
                 autoComplete="off"
             >
@@ -89,11 +78,11 @@ function NavigationBar() {
                 ))}
             </select>
             <div id="cwd-container">
-                <button id="search-button" className="iconButton" onClick={() => searchCwd()}><FontAwesomeIcon icon={faSearch} /></button>
+                <button id="search-button" className="iconButton" onClick={() => setCwd()}><FontAwesomeIcon icon={faSearch} /></button>
                 <input
                     id="cwd-input"
                     placeholder="Current Working Directory"
-                    value={cwd}
+                    value={displayCwd}
                     onChange={handleCwdChange}
                 />
                 <button id="create-button" className="iconButton" onClick={() => createNewProject()}><FontAwesomeIcon icon={faPlus} /></button>

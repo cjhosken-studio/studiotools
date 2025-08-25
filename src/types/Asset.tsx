@@ -3,6 +3,7 @@ import { exists, readDir, readTextFile, stat } from "@tauri-apps/plugin-fs";
 import { getVersion, removeVersionFromName } from "../utils/Version";
 import yaml from "js-yaml";
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { getTypeFromFolder } from "./Project";
 
 export default class Asset {
     name: string = "";
@@ -15,7 +16,7 @@ export default class Asset {
     published: boolean = false;
     thumbnail: string;
 
-    constructor(name: string = "", path: string = "", version: number = 0, size: number = 0, modified: Date | null = null, root: string = "", type: string="", published = false, thumbnail="") {
+    constructor(name: string = "", path: string = "", version: number = 0, size: number = 0, modified: Date | null = null, root: string = "", type: string = "", published = false, thumbnail = "") {
         this.name = name;
         this.path = path;
         this.version = version;
@@ -30,44 +31,75 @@ export default class Asset {
     getThumbnail() {
         if (this.thumbnail) {
             return convertFileSrc(this.thumbnail!)
-        } 
+        }
 
         return ""
     }
 }
 
-export async function loadAssets(task: string) : Promise<Asset[]> {
-    const assets : Asset[] = [];
-    const versions = await join(task, "versions");
-    const published = await join(task, "published");
+export async function loadAssets(path: string): Promise<Asset[]> {
+    const assets: Asset[] = [];
 
-    const entries = await readDir(versions);
-    for (const entry of entries) {
-        const fullPath = await join(versions, entry.name);
-        const version = getVersion(entry.name);
-        const cleanName = removeVersionFromName(entry.name);
+    if (!path || !(await exists(path))) return assets;
 
-        const root = await getRootFromAssetPath(fullPath);
-        const type = await getTypeFromAssetPath(fullPath);
-        // Check if published
+    const scanFolder = async (folder: string) => {
+        if (await getTypeFromFolder(folder) === "task") {
+            const versions = await join(folder, "versions");
+            const published = await join(folder, "published");
 
-        const thumbnailPath = await join(fullPath, "thumbnail.png");
+            const entries = await readDir(versions);
+            const childAssets = await Promise.all(
+                entries.map(async entry => {
+                    const path = await join(versions, entry.name);
+                    const version = getVersion(entry.name);
+                    const name = removeVersionFromName(entry.name);
 
-        let is_published = false;
+                    const root = await getRootFromAssetPath(path);
+                    const type = await getTypeFromAssetPath(path);
+                    // Check if published
 
-        const publishedEntry = await join(published, cleanName);
-        if (await exists(publishedEntry)) {
-            const published_version = await getVersionFromAssetPath(publishedEntry);
-            is_published = published_version === version;
+                    const thumbnail = await join(path, "thumbnail.png");
+
+                    let is_published = false;
+
+                    const publishedEntry = await join(published, name);
+                    if (await exists(publishedEntry)) {
+                        const published_version = await getVersionFromAssetPath(publishedEntry);
+                        is_published = published_version === version;
+                    }
+
+                    const stats = await stat(root);
+
+                    return new Asset(
+                        name,
+                        path,
+                        version ?? 0,
+                        stats.size ?? 0,
+                        stats.mtime ? new Date(stats.mtime) : null,
+                        root,
+                        type,
+                        is_published,
+                        thumbnail
+                    )
+                })
+            )
+
+            assets.push(...childAssets);
+
+        } else {
+            const subEntires = await readDir(folder);
+            await Promise.all(
+                subEntires
+                    .filter(e => e.isDirectory)
+                    .map(async e => {
+                        const subFolder = await join(folder, e.name);
+                        await scanFolder(subFolder)
+                    })
+            );
         }
+    };
 
-        const stats = await stat(root);
-
-        assets.push(
-            new Asset(cleanName, fullPath, version ?? 0, stats.size ?? 0, stats.mtime ? new Date(stats.mtime) : null, root, type, is_published, thumbnailPath)
-        )
-    }
-
+    await scanFolder(path);
     return assets;
 }
 

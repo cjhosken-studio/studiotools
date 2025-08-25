@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
-import "./AssetTree.css";
+import "./ListView.css";
+import "./AssetListView.css";
 import Asset, { loadAssets } from "../../types/Asset";
 import { invoke } from "@tauri-apps/api/core";
 import { dirname, join } from "@tauri-apps/api/path";
@@ -13,14 +14,16 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import { removeVersionFromName } from "../../utils/Version";
 import { exists, remove } from "@tauri-apps/plugin-fs";
 import { useAppContext } from "../../ContextProvider";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faRefresh } from "@fortawesome/free-solid-svg-icons";
 
-export default function AssetTree(
+export default function AssetListView(
     {
         selectedAsset,
         setSelectedAsset
-    } : {
+    }: {
         selectedAsset: Asset | null,
-        setSelectedAsset: (asset: Asset) => void;
+        setSelectedAsset: (asset: Asset | null) => void;
     }
 ) {
     const { context, setContext } = useAppContext();
@@ -81,11 +84,10 @@ export default function AssetTree(
         refresh();
         const interval = setInterval(refresh, 5000); // every 5 seconds
         return () => clearInterval(interval);
-    }, [context.cwd, setAsPublished]);
+    }, [context.cwd]);
 
     async function launchUSDView(asset: Asset) {
         invoke("launch", { executable: "usdview", id: "usdview", path: await join(asset.path, "stage.usd") })
-
     }
 
     const handleRightClick = (e: React.MouseEvent, asset: Asset) => {
@@ -126,33 +128,47 @@ export default function AssetTree(
     }
 
     return (
-        <div id="asset-tree">
-            <div id="asset-tree-panel">
-                <div>
-                    <button onClick={() => {refresh()}}> Refresh </button>
+        <div className="listView">
+            <div className="listViewPanel">
+                <div className="listViewHeader">
+                    <span></span>
+                    <button className="iconButton" onClick={() => { refresh() }}> <FontAwesomeIcon icon={faRefresh}/> </button>
                 </div>
-                <table id="asset-tree-table">
-                    <thead>
-                        <tr>
-                            <th></th>
-                            <th>File</th>
-                            <th onClick={() => handleSort("version")}>Version</th>
-                            <th onClick={() => handleSort("size")}>Size</th>
-                            <th onClick={() => handleSort("modified")}>Modified</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedAssets.map((asset, i) => (
-                            <tr key={i} onClick={() => setSelectedAsset(asset)} onContextMenu={(e) => handleRightClick(e, asset)} onDoubleClick={() => launchUSDView(asset)} className={`assetItem ${asset.published ? "published" : ""} ${selectedAsset && asset.path == selectedAsset.path ? "selected" : ""}`}>
-                                <td><img src={formatIconFromAssetType(asset.type)} /></td>
-                                <td>{asset.name}</td>
-                                <td>{formatVersion(asset.version)}</td>
-                                <td>{formatFileSize(asset.size)} </td>
-                                <td>{formatTime(asset.modified)}</td>
+                <div className="listViewContainer">
+                    <table className="listViewTable">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th onClick={() => handleSort("name")}>File</th>
+                                <th onClick={() => handleSort("version")}>Version</th>
+                                <th onClick={() => handleSort("size")}>Size</th>
+                                <th onClick={() => handleSort("modified")}>Modified</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                    </table>
+                    <div className="listViewBodyContainer">
+                        <table className="listViewTable">
+                            <tbody>
+                                {sortedAssets.map((asset, i) => (
+                                    <tr key={i} onClick={() => {
+                                        if (selectedAsset && selectedAsset.path === asset.path) {
+                                            setSelectedAsset(null);
+                                        } else {
+                                            setSelectedAsset(asset)}
+                                        }
+                                        
+                                        } onContextMenu={(e) => handleRightClick(e, asset)} className={`listViewItem ${asset.published ? "published" : ""} ${selectedAsset && asset.path == selectedAsset.path ? "selected" : ""}`}>
+                                        <td><img src={formatIconFromAssetType(asset.type)} /></td>
+                                        <td>{asset.name}</td>
+                                        <td>{formatVersion(asset.version)}</td>
+                                        <td>{formatFileSize(asset.size)} </td>
+                                        <td>{formatTime(asset.modified)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             {menuPosition && (
                 <div className="popup">
