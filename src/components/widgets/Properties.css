@@ -6,15 +6,30 @@
 #properties-panel {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 100%;
+    justify-content: top;
+    text-align: center;
     height: 100%;
-    background-color: var(--dark-background-color);
+    background-color: var(--dark-grey);
     border-radius: 1em;
     border: solid 1px var(--medium-grey);
+    overflow: hidden;
+}
+
+#properties-header {
+    display: flex;
+    justify-content: end;
 }
 
 #properties-panel img {
-    width: 100%;
+    margin: 1em 0em;
+    width: 90%;
+    border-radius: 1em;
+}
+
+#properties-panel .row {
+    display: flex;
+    justify-content: center;
+    gap: 1em;
+    align-items: center;
+    height: auto;
 }

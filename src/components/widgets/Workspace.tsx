@@ -30,7 +30,7 @@ export default function Workspace() {
                     {isInTask && (<TaskListView selectedTaskFile={selectedTaskFile} setSelectedTaskFile={setSelectedTaskFile}/>)}
                     <AssetListView selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset} />
                 </div>
-                {selectedAsset && (<PropertiesPanel asset={selectedAsset} />)}
+                {selectedAsset && (<PropertiesPanel selectedAsset={selectedAsset} setSelectedAsset={setSelectedAsset} />)}
             </div>
         </div>
     );
