@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./public/usd.png" alt="Deadshot Logo" width="200"/>
+  <img src="./public/icons/usd.png" alt="Deadshot Logo" width="200"/>
 </p>
 
 <h1 align="center"> StudioTools </h1>
@@ -8,13 +8,13 @@
 
   <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff"/>
   <img src="https://img.shields.io/badge/React_Typescript-%2320232a.svg?logo=react&logoColor=%2361DAFB"/>
-  <img src="https://img.shields.io/badge/Tauri-%2320232a.svg?logo=react&logoColor=%2361DAFB"/>
-  <img src="https://img.shields.io/badge/Rust-%2320232a.svg?logo=react&logoColor=%2361DAFB"/>
+  <img src="https://img.shields.io/badge/Tauri-24C8D8?logo=tauri&logoColor=fff"/>
+  <img src="https://img.shields.io/badge/Rust-%23000000.svg?e&logo=rust&logoColor=white"/>
 
   <br/>
 
-  <a href="https://github.com/cjhosken-studio/studiotools/actions/workflows/build.yml">
-    <img src="https://github.com/cjhosken-studio/studiotools/actions/workflows/build.yml/badge.svg?branch=main" alt="App Build"/>
+  <a href="https://github.com/cjhosken-studio/studiotools/actions/workflows/build.yaml">
+    <img src="https://github.com/cjhosken-studio/studiotools/actions/workflows/build.yaml/badge.svg?branch=main" alt="App Build"/>
   </a>
 
 </div>
