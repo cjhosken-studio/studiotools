@@ -3,7 +3,7 @@ import Context from "./types/Context";
 import Project from "./types/Project";
 import { Store } from "@tauri-apps/plugin-store";
 
-const store = await Store.load("storage.json");
+const store = await Store.load("storage.json"); // creates file if missing
 
 /**
  * General setter for any store item

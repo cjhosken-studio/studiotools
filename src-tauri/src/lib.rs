@@ -1,6 +1,4 @@
-use std::process::Command;
 use std::path::Path;
-use std::fs;
 use std::env;
 
 #[cfg(windows)]
