@@ -3,24 +3,32 @@ import Context from "./types/Context";
 import Project from "./types/Project";
 import { Store } from "@tauri-apps/plugin-store";
 
-const store = await Store.load("storage.json"); // creates file if missing
+let store: Store | null = null;
+
+export async function initStore() {
+  if (!store) {
+    store = await Store.load("storage.json");
+  }
+  return store;
+}
+
 
 /**
  * General setter for any store item
  */
 export async function setStoreItem<T>(key: string, item: T) {
-    await store.set(
+    await store!.set(
         key,
         item
     )
-    await store.save()
+    await store!.save()
 }
 
 /**
  * General getter for any store item
  */
 export async function getStoreItem<T>(key: string): Promise<T | null> {
-    const data = await store.get(key);
+    const data = await store!.get(key);
     if (!data) return null;
 
     return data as T;
