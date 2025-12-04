@@ -34,98 +34,154 @@ fn symlink(asset: String, symlink: String) -> Result<(), String> {
 
 #[tauri::command]
 fn launch(executable: String, id: String, path: String) {
-    let submodules_path = append_env_var("PYTHONPATH", "./tools");
+    use std::path::{Path, PathBuf};
+    use std::process::Command;
+
+    let is_windows = cfg!(target_os = "windows");
+    let shell = if is_windows { "cmd" } else { "sh" };
+    let shell_flag = if is_windows { "/C" } else { "-c" };
+
+    println!("Launching: {} {}", id, executable);
+
     let parent = Path::new(&executable).parent().unwrap();
+    let submodules_path = append_env_var("PYTHONPATH", "./tools");
 
+    //
+    // 👉 Helper to run commands cross-platform
+    //
+    let mut run = |cmd: Vec<String>, envs: Vec<(&str, String)>| {
+        let joined = cmd.join(" ");
+        let mut command = Command::new(shell);
+        command.arg(shell_flag).arg(joined);
 
-    #[cfg(target_os = "windows")]
-    {
-        if id == "blender" {
-            let load_script = Path::new("./tools/blender_studiotools/load.py").canonicalize().unwrap();
-            let python_requirements = Path::new("./tools/blender_studiotools/requirements.txt").canonicalize().unwrap();
-            
-            let version_dir = fs::read_dir(parent).ok()
-                .and_then(|entries| {
-                    entries.filter_map(|entry| entry.ok())
-                        .find(|entry| {
-                            entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
-                                && entry.file_name().to_string_lossy().chars().next().unwrap_or(' ').is_ascii_digit()
-                        })
-                })
-                .expect("Could not find Blender version directory");
-            
-            let blender_python_path = version_dir.path()
-                .join("python")
-                .join("bin")
-                .join("python.exe");
-
-            Command::new("cmd")
-                .args(&[
-                    "/C",
-                    blender_python_path.to_str().unwrap(),
-                    "-m",
-                    "pip",
-                    "install",
-                    "-r", 
-                    python_requirements.to_str().unwrap()
-                ])
-                .spawn()
-                .unwrap();
-
-            Command::new("cmd")
-                .env("PYTHONPATH", submodules_path.to_string())
-                .args(&[
-                    "/C",
-                    &executable,
-                    &path.as_str(),
-                    "--python-use-system-env",
-                    "--python", load_script.to_str().unwrap()
-                ])
-                .spawn()
-                .unwrap();
+        for (k, v) in envs {
+            command.env(k, v);
         }
-        else if id == "houdini" {
-            let load_script = Path::new("./tools/houdini_studiotools/load.py").canonicalize().unwrap();
-            let toolbar_path = append_env_var("HOUDINI_TOOLBAR_PATH", &format!("./tools/houdini_studiotools/houdini/toolbar{}&", SEP));
-            let otlscan_path = append_env_var("HOUDINI_OTLSCAN_PATH", &format!("./tools/houdini_studiotools/houdini/otls{}&", SEP));
-            let menu_path = append_env_var("HOUDINI_MENU_PATH", &format!("./tools/houdini_studiotools/houdini{}&", SEP));
-            let hython = parent.join("hython.exe");
+
+        command.spawn().expect("Failed to launch process");
+    };
+
+    //
+    // 1 — BLENDER
+    //
+    if id == "blender" {
+        let load_script = Path::new("./tools/blender_studiotools/load.py")
+            .canonicalize()
+            .unwrap();
             
+        let python_requirements = Path::new("./tools/blender_studiotools/requirements.txt")
+            .canonicalize()
+            .unwrap();
 
-            Command::new("cmd")
-                .args(&["/C", hython.to_str().unwrap(), load_script.to_str().unwrap(), &path])
-                .spawn()
-                .unwrap();
+        //
+        // Blender internal Python
+        //
+        if is_windows {
 
-            Command::new("cmd")
-                .env("PYTHONPATH", submodules_path.to_string())
-                .env("HOUDINI_TOOLBAR_PATH", toolbar_path.to_string())
-                .env("HOUDINI_OTLSCAN_PATH", otlscan_path.to_string())
-                .env("HOUDINI_MENU_PATH", menu_path.to_string())
-                .args(&["/C", &executable, &path])
-                .spawn()
-                .unwrap();
+        } else {
+        //
+        // Linux: Blender bundles Python under:
+        // <blender>/VERSION/python/bin/python3.X
+        //
+        println!("TEST");
 
-        } else if id == "usdview" {
-            Command::new("cmd")
-                .env("PATH","c:/Program Files/Side Effects Software/Houdini 20.5.332/bin" )
-                .args(&[
-                    "/C",
-                    "hython",
-                    "c:/Program Files/Side Effects Software/Houdini 20.5.332/bin/usdview",
-                    &path
-                ])
-                .spawn()
-                .unwrap();
-        } 
-        else {
-            Command::new("cmd")
-                .args(&["/C", &executable, &path])
-                .spawn()
-                .unwrap();
+            let blender_python_path = {
+                // Find folder beginning with a digit, e.g. "5.0", "4.2", etc.
+                let version_dir = std::fs::read_dir(parent)
+                    .unwrap()
+                    .filter_map(|e| e.ok())
+                    .find(|entry| {
+                        let binding = entry.file_name();
+                        let name = binding.to_string_lossy();
+                        name.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false)
+                            && entry.path().join("python/bin").exists()
+                    });
+
+                if let Some(dir) = version_dir {
+                    let bin = dir.path().join("python/bin");
+
+                    let candidates = ["python3.11", "python3.10", "python3.9", "python3"];
+
+                    let found = candidates
+                        .iter()
+                        .map(|c| bin.join(c))
+                        .find(|p| p.exists());
+
+                    found.unwrap_or_else(|| PathBuf::from("python3"))
+                } else {
+                    PathBuf::from("python3")
+                }
+            };
+
+            println!("TEST");
+
+            // Blender's Python often ships WITHOUT pip. Must run ensurepip first.
+            run(
+                vec![
+                    blender_python_path.to_string_lossy().to_string(),
+                    "-m".into(),
+                    "ensurepip".into(),
+                ],
+                vec![],
+            );
+
+            // Now install your tools
+            run(
+                vec![
+                    blender_python_path.to_string_lossy().to_string(),
+                    "-m".into(),
+                    "pip".into(),
+                    "install".into(),
+                    "-r".into(),
+                    python_requirements.to_string_lossy().to_string(),
+                ],
+                vec![],
+            );
+
         }
+
+        run( 
+            vec![ 
+                executable.clone(), 
+                path.clone(), 
+                "--python-use-system-env".into(),
+                 "--python".into(), 
+                 load_script.to_string_lossy().to_string(), 
+            ], 
+            vec![
+        ("PYTHONPATH", submodules_path.to_string()),
+        ("INPIPE", "true".to_string()),  // or any value you want
+    ],         );       
+    }
+
+    //
+    // 3 — USDView
+    //
+    else if id == "usdview" {
+        let usdview_cmd = if is_windows {
+            vec![
+                "hython".into(),
+                "c:/Program Files/Side Effects Software/Houdini 20.5.332/bin/usdview".into(),
+                path.clone(),
+            ]
+        } else {
+            vec!["usdview".into(), path.clone()]
+        };
+
+        run(
+            usdview_cmd,
+            if is_windows {
+                vec![(
+                    "PATH",
+                    "c:/Program Files/Side Effects Software/Houdini 20.5.332/bin".into(),
+                )]
+            } else {
+                vec![]
+            },
+        );
     }
 }
+
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

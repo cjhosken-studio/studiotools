@@ -1,7 +1,9 @@
-import { exists, readDir } from "@tauri-apps/plugin-fs";
+import { exists, readDir, readTextFile } from "@tauri-apps/plugin-fs";
 import { join } from "@tauri-apps/api/path";
 import { platform } from "@tauri-apps/plugin-os";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import Context from "./Context";
+import yaml from "js-yaml";
 
 export default class Application {
     name: string = "";
@@ -34,9 +36,13 @@ export default class Application {
     getIcon() {
         if (this.icon) {
             return convertFileSrc(this.icon!)
-        } 
+        }
 
         return `/icons/${this.id}.png`
+    }
+
+    getFiles() {
+        return this.files;
     }
 
     async launch(path: string = "") {
@@ -44,7 +50,7 @@ export default class Application {
     }
 }
 
-export async function loadDefaultApplications(): Promise<Application[]> {
+export async function loadApplications(context: Context): Promise<Application[]> {
     const applications: Application[] = []
     const os_platform = platform();
 
@@ -134,6 +140,91 @@ export async function loadDefaultApplications(): Promise<Application[]> {
             }
         }
 
+    }
+
+    else if (os_platform == "linux") {
+
+        // BLENDER
+
+        const blenderRoot = await join("/usr", "local", "bin", "blender")
+        if (await exists(blenderRoot)) {
+            const files = [".blend"]
+
+
+            const executable = blenderRoot
+
+            if (await exists(executable)) {
+                applications.push(
+                    new Application("blender", null, executable, files, "blender")
+                )
+            }
+        }
+
+        // HOUDINI
+
+        const sidefxRoot = await join("/opt/");
+        if (await exists(sidefxRoot)) {
+            const entries = await readDir(sidefxRoot);
+
+            const files = [".hip", ".hipnc"]
+
+            for (const entry of entries) {
+                if (!entry.isDirectory) continue;
+
+                const versionBin = await join(sidefxRoot, entry.name, "bin")
+
+                if (await exists(versionBin)) {
+                    const base_exe = await join(versionBin, "houdini")
+
+                    if (await exists(base_exe)) {
+                        applications.push(
+                            new Application(`${entry.name}`, null, base_exe, files, "houdini")
+                        )
+                    }
+
+                    const core_exe = await join(versionBin, "houdinicore")
+
+                    if (await exists(core_exe)) {
+                        applications.push(
+                            new Application(`${entry.name} Core`, null, core_exe, files, "houdini")
+                        )
+                    }
+
+                    const fx_exe = await join(versionBin, "houdinifx")
+
+                    if (await exists(fx_exe)) {
+                        applications.push(
+                            new Application(`${entry.name} FX`, null, fx_exe, files, "houdini")
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    try {
+        const appConfigPath = await join(context.project.path, "apps.yaml");
+
+        if (await exists(appConfigPath)) {
+            const yamlText = await readTextFile(appConfigPath);
+            const data = yaml.load(yamlText) as any;
+
+            if (data?.apps && Array.isArray(data.apps)) {
+                for (const entry of data.apps) {
+                    applications.push(
+                        new Application(
+                            entry.name,
+                            null,
+                            entry.path,
+                            [".blend"],          // custom apps have no extension filters unless you later add it
+                            "blender"
+                        )
+                    );
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Failed to load apps.yaml:", err);
     }
 
     return applications;

@@ -3,7 +3,7 @@ import Context from "../../types/Context"
 import "./ApplicationDialog.css"
 import TaskFile, { createTaskFile, openTaskFile } from "../../types/TaskFile";
 import { useEffect, useState } from "react";
-import Application, { loadDefaultApplications } from "../../types/Application";
+import Application, { loadApplications } from "../../types/Application";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClose } from "@fortawesome/free-solid-svg-icons";
 
@@ -20,7 +20,7 @@ export default function ApplicationDialog({
 
     useEffect(() => {
         async function fetchApps() {
-            const apps = await loadDefaultApplications();
+            const apps = await loadApplications(context);
             setApplications(apps);
         }
         fetchApps();

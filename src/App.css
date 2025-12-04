@@ -68,9 +68,23 @@ main {
 select {
   border: solid var(--medium-grey) 1px;
   border-radius: 2em;
-  padding: 1em;
-  background-color:var(--dark-grey);
+  padding: 1em 1.5em;
+  background-color: var(--dark-grey);
   color: var(--white-on-background);
+
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+
+    background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='14' width='14' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'><polygon points='0,0 20,0 10,12'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 1em top 60%; /* move arrow */
+    background-size: 5%;
+
+}
+
+option {
+  background-color: red;
 }
 
 select:focus {
@@ -137,9 +151,6 @@ button:hover {
 .link {
   color: var(--primary-color);
 }
-
-
-
 
 *::-webkit-scrollbar {
   width: 4px;

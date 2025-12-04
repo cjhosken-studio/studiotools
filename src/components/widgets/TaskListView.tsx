@@ -116,7 +116,7 @@ export default function TaskListView(
         <div className="listView">
             <div className="listViewPanel">
                 <div className="listViewHeader">
-                    <button onClick={() => { setTaskFile(null); setOpenApplication(true) }}> Create + </button>
+                    <button className="create-button" onClick={() => { setTaskFile(null); setOpenApplication(true) }}> Create + </button>
                     <button className="iconButton" onClick={() => { refresh() }}> <FontAwesomeIcon icon={faRefresh} /> </button>
                 </div>
                 <div className="listViewContainer">
