@@ -83,10 +83,6 @@ select {
 
 }
 
-option {
-  background-color: red;
-}
-
 select:focus {
   outline: none;
 }
