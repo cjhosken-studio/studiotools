@@ -48,41 +48,51 @@ export async function loadAssets(path: string): Promise<Asset[]> {
             const published = await join(folder, "published");
 
             const entries = await readDir(versions);
-            const childAssets = await Promise.all(
-                entries.map(async entry => {
-                    const path = await join(versions, entry.name);
-                    const version = getVersion(entry.name);
-                    const name = removeVersionFromName(entry.name);
+            const childAssets = (
+                await Promise.all(
+                    entries.map(async entry => {
+                        const path = await join(versions, entry.name);
 
-                    const root = await getRootFromAssetPath(path);
-                    const type = await getTypeFromAssetPath(path);
-                    // Check if published
+                        const metadata = await join(path, "metadata.yaml");
+                        if (!(await exists(metadata))) {
+                            return null;
+                        }
 
-                    const thumbnail = await join(path, "thumbnail.png");
+                        console.log(path);
 
-                    let is_published = false;
+                        const version = getVersion(entry.name);
+                        const name = removeVersionFromName(entry.name);
 
-                    const publishedEntry = await join(published, name);
-                    if (await exists(publishedEntry)) {
-                        const published_version = await getVersionFromAssetPath(publishedEntry);
-                        is_published = published_version === version;
-                    }
+                        const root = await getRootFromAssetPath(path);
+                        const type = await getTypeFromAssetPath(path);
+                        // Check if published
 
-                    const stats = await stat(root);
+                        const thumbnail = await join(path, "thumbnail.png");
 
-                    return new Asset(
-                        name,
-                        path,
-                        version ?? 0,
-                        stats.size ?? 0,
-                        stats.mtime ? new Date(stats.mtime) : null,
-                        root,
-                        type,
-                        is_published,
-                        thumbnail
-                    )
-                })
-            )
+                        let is_published = false;
+
+                        const publishedEntry = await join(published, name);
+                        if (await exists(publishedEntry)) {
+                            const published_version = await getVersionFromAssetPath(publishedEntry);
+                            is_published = published_version === version;
+                        }
+
+                        const stats = await stat(root);
+
+                        return new Asset(
+                            name,
+                            path,
+                            version ?? 0,
+                            stats.size ?? 0,
+                            stats.mtime ? new Date(stats.mtime) : null,
+                            root,
+                            type,
+                            is_published,
+                            thumbnail
+                        )
+                    })
+                )
+            ).filter((a: Asset | null): a is Asset => a !== null);  // <-- filter nulls safely
 
             assets.push(...childAssets);
 

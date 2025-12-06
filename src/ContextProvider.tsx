@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { loadStoredContext, loadStoredProjects, storeContext, storeProjectList } from "./Storage";
+import { initStore, loadStoredContext, loadStoredProjects, storeContext, storeProjectList } from "./Storage";
 import Context from "./types/Context"
 import Project from "./types/Project";
 
@@ -27,6 +27,8 @@ export function ContextProvider({ children } : { children: ReactNode }) {
 
     useEffect(() => {
         (async () => {
+            await initStore();   // <-- REQUIRED!
+
             const storedCtx = await loadStoredContext();
 
             if (storedCtx) setContextState(storedCtx);

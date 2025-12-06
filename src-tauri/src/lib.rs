@@ -115,7 +115,7 @@ pub fn find_blender_python(blender_exe: &Path, is_windows: bool) -> PathBuf {
 fn launch(executable: String, id: String, path: String) {
     let exe_path = PathBuf::from(&executable);
     let is_windows = cfg!(target_os = "windows");
-    let submodules_path = append_env_var("PYTHONPATH", "./tools");
+    let submodules_path = append_env_var("PYTHONPATH", "../plugins");
     let parent = Path::new(&executable).parent().unwrap();
 
     println!("Launching: {} {}", id, executable);
@@ -126,11 +126,11 @@ fn launch(executable: String, id: String, path: String) {
     // ---------------------------------------------------------
     //
     if id == "blender" {
-        let load_script = Path::new("./tools/blender_studiotools/load.py")
+        let load_script = Path::new("../plugins/blender_studiotools/load.py")
             .canonicalize()
             .unwrap();
 
-        let requirements = Path::new("./tools/blender_studiotools/requirements.txt")
+        let requirements = Path::new("../plugins/blender_studiotools/requirements.txt")
             .canonicalize()
             .unwrap();
 
@@ -183,10 +183,10 @@ fn launch(executable: String, id: String, path: String) {
     }
 
     if id == "houdini" {
-        let load_script = Path::new("./tools/houdini_studiotools/load.py").canonicalize().unwrap();
-        let toolbar_path = append_env_var("HOUDINI_TOOLBAR_PATH", &format!("./tools/houdini_studiotools/houdini/toolbar{}&", SEP));
-        let otlscan_path = append_env_var("HOUDINI_OTLSCAN_PATH", &format!("./tools/houdini_studiotools/houdini/otls{}&", SEP));
-        let menu_path = append_env_var("HOUDINI_MENU_PATH", &format!("./tools/houdini_studiotools/houdini{}&", SEP));
+        let load_script = Path::new("../plugins/houdini_studiotools/load.py").canonicalize().unwrap();
+        let toolbar_path = append_env_var("HOUDINI_TOOLBAR_PATH", &format!("../plugins/houdini_studiotools/houdini/toolbar{}&", SEP));
+        let otlscan_path = append_env_var("HOUDINI_OTLSCAN_PATH", &format!("../plugins/houdini_studiotools/houdini/otls{}&", SEP));
+        let menu_path = append_env_var("HOUDINI_MENU_PATH", &format!("../plugins/houdini_studiotools/houdini{}&", SEP));
         let hython = parent.join("hython.exe");
 
         #[cfg(not(target_os = "windows"))]

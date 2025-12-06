@@ -76,6 +76,7 @@ export default function AssetListView(
     });
 
     async function refresh() {
+        console.log(context.cwd);
         const assets = await loadAssets(context.cwd);
         setAssets(assets);
     }

@@ -1,5 +1,5 @@
 import { exists } from "@tauri-apps/plugin-fs";
-import Context from "./types/Context";
+import Context, { getProjectFromCwd } from "./types/Context";
 import Project from "./types/Project";
 import { Store } from "@tauri-apps/plugin-store";
 
@@ -55,6 +55,19 @@ export async function loadStoredContext(): Promise<Context | null> {
     }>("lastContext");
     
     if (!parsed || !parsed.project || parsed.cwd === undefined) return null;
+
+    if (!await exists(parsed.project.path)) {
+        if (!await exists(parsed.cwd)) {
+            return null;
+        }
+
+        const project = await getProjectFromCwd(parsed.cwd);
+        parsed.project = { name: project.name, path: project.path };
+    };
+
+    if (!await exists(parsed.cwd)) {
+        parsed.cwd = parsed.project.path;
+    }
 
     return new Context(new Project(parsed.project.name, parsed.project.path), parsed.cwd);
 }

@@ -76,8 +76,17 @@ export default function TaskListView(
     });
 
     async function refresh() {
-        const taskFiles = await loadTaskFiles(context.cwd)
-        setFiles(taskFiles);
+        const taskFiles = await loadTaskFiles(context.cwd);
+
+        // Hide anything inside a "backup" folder
+        const filtered = taskFiles.filter(f => 
+            !f.path.toLowerCase().includes("/backup/") && 
+            !f.path.toLowerCase().includes("\\backup\\") &&
+            !f.path.toLowerCase().includes("bac")
+              // for Windows
+        );
+
+        setFiles(filtered);
     }
 
     useEffect(() => {
