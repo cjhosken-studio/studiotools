@@ -6,4 +6,7 @@
 	url = git@github.com:cjhosken-studio/houdini_studiotools.git
 [submodule "plugins/blender_studiotools"]
 	path = plugins/blender_studiotools
-	url = git@github.com:cjhosken-studio/blender_studiotools.git
+	url = https://github.com/cjhosken-studio/blender_studiotools.git
+[submodule "plugins/houdini_studiotools"]
+	path = plugins/houdini_studiotools
+	url = https://github.com/cjhosken-studio/houdini_studiotools.git
