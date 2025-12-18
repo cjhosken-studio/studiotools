@@ -27,7 +27,7 @@ export function ContextProvider({ children } : { children: ReactNode }) {
 
     useEffect(() => {
         (async () => {
-            await initStore();   // <-- REQUIRED!
+            await initStore();
 
             const storedCtx = await loadStoredContext();
 

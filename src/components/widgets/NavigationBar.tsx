@@ -14,6 +14,7 @@ function NavigationBar() {
 
     useEffect(() => {
         setDisplayCwd(context.cwd);
+        setProjectList(projectList);
     }, [context])
 
     const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

@@ -12,11 +12,18 @@ export async function initStore() {
   return store;
 }
 
+async function ensureStore() {
+    if (!store) {
+        store = await Store.load("storage.json");
+    }
+}
 
 /**
  * General setter for any store item
  */
 export async function setStoreItem<T>(key: string, item: T) {
+    ensureStore();
+
     await store!.set(
         key,
         item
@@ -28,6 +35,8 @@ export async function setStoreItem<T>(key: string, item: T) {
  * General getter for any store item
  */
 export async function getStoreItem<T>(key: string): Promise<T | null> {
+    ensureStore();
+    
     const data = await store!.get(key);
     if (!data) return null;
 

@@ -1,6 +1,6 @@
 import Project from "./Project.tsx"
-import { readDir, DirEntry, exists, mkdir, writeFile, readTextFile } from "@tauri-apps/plugin-fs";
-import { appDataDir, dirname } from "@tauri-apps/api/path";
+import { readDir, DirEntry, exists } from "@tauri-apps/plugin-fs";
+import { dirname } from "@tauri-apps/api/path";
 
 export default class Context {
     project: Project = new Project("", "");

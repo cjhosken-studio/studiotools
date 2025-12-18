@@ -38,10 +38,9 @@ export default function ConfigureProjectDialog({
 
         try {
             const existing = await readTextFile(appConfigPath);
-            config = (yaml.load(existing) as any) || {};
-        } catch (_) {
-            // file doesn't exist → start fresh
-            config = {};
+            config = (yaml.load(existing)) || {};
+        } catch (e) {
+            console.log(e);
         }
 
         if (!Array.isArray(config.apps)) {
