@@ -81,7 +81,7 @@ export default function ConfigureProjectDialog({
                     {applications.length === 0 ? (
                         <p> No Apps Found </p>
                     ) : (
-                        <div>
+                        <div id="applications">
                             {applications.map((app, i) => (
                                 <div key={i} className="appItem">
                                     <span className="appIcon">
