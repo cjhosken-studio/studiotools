@@ -187,26 +187,46 @@ fn launch(executable: String, id: String, path: String) {
         let toolbar_path = append_env_var("HOUDINI_TOOLBAR_PATH", &format!("../plugins/houdini_studiotools/houdini/toolbar{}&", SEP));
         let otlscan_path = append_env_var("HOUDINI_OTLSCAN_PATH", &format!("../plugins/houdini_studiotools/houdini/otls{}&", SEP));
         let menu_path = append_env_var("HOUDINI_MENU_PATH", &format!("../plugins/houdini_studiotools/houdini{}&", SEP));
-        let hython = parent.join("hython.exe");
+        let mut hython = parent.join("hython.exe");
 
         #[cfg(not(target_os = "windows"))]
         {
-            hython = parent.join("hython.exe");
+            let hython = parent.join("hython");
+
+            Command::new(&hython)
+                .arg(load_script)
+                .arg(&path)
+                .spawn()
+                .expect("Failed to launch hython");
+
+            Command::new(&executable)
+                .env("PYTHONPATH", submodules_path.to_string())
+                .env("HOUDINI_TOOLBAR_PATH", toolbar_path)
+                .env("HOUDINI_OTLSCAN_PATH", otlscan_path)
+                .env("HOUDINI_MENU_PATH", menu_path)
+                .arg(&path)
+                .spawn()
+                .expect("Failed to launch Houdini");
         }
 
-        Command::new("cmd")
-            .args(&["/C", hython.to_str().unwrap(), load_script.to_str().unwrap(), &path])
-            .spawn()
-            .unwrap();
+        #[cfg(target_os = "windows")]
+        {
+            let hython = parent.join("hython.exe");
 
-        Command::new("cmd")
-            .env("PYTHONPATH", submodules_path.to_string())
-            .env("HOUDINI_TOOLBAR_PATH", toolbar_path.to_string())
-            .env("HOUDINI_OTLSCAN_PATH", otlscan_path.to_string())
-            .env("HOUDINI_MENU_PATH", menu_path.to_string())
-            .args(&["/C", &executable, &path])
-            .spawn()
-            .unwrap();
+            Command::new("cmd")
+                .args(&["/C", hython.to_str().unwrap(), load_script.to_str().unwrap(), &path])
+                .spawn()
+                .unwrap();
+
+            Command::new("cmd")
+                .env("PYTHONPATH", submodules_path.to_string())
+                .env("HOUDINI_TOOLBAR_PATH", toolbar_path)
+                .env("HOUDINI_OTLSCAN_PATH", otlscan_path)
+                .env("HOUDINI_MENU_PATH", menu_path)
+                .args(&["/C", &executable, &path])
+                .spawn()
+                .unwrap();
+        }
 
     }
 
