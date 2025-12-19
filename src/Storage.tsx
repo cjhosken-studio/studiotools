@@ -1,9 +1,11 @@
 import { exists } from "@tauri-apps/plugin-fs";
 import Context, { getProjectFromCwd } from "./types/Context";
-import Project from "./types/Project";
+import Project, { ProjectDTO } from "./types/Project";
 import { Store } from "@tauri-apps/plugin-store";
 
 let store: Store | null = null;
+
+
 
 export async function initStore() {
   if (!store) {
@@ -16,31 +18,27 @@ async function ensureStore() {
     if (!store) {
         store = await Store.load("storage.json");
     }
+    return store
 }
 
 /**
  * General setter for any store item
  */
 export async function setStoreItem<T>(key: string, item: T) {
-    ensureStore();
+    const store = await ensureStore();
 
-    await store!.set(
-        key,
-        item
-    )
-    await store!.save()
+    await store.set(key, item);
+    await store.save();
 }
 
 /**
  * General getter for any store item
  */
 export async function getStoreItem<T>(key: string): Promise<T | null> {
-    ensureStore();
+    const store = await ensureStore();
     
-    const data = await store!.get(key);
-    if (!data) return null;
-
-    return data as T;
+    const data = await store.get(key);
+    return (data ?? null) as T | null;
 }
 
 
@@ -83,7 +81,14 @@ export async function loadStoredContext(): Promise<Context | null> {
 
 
 export async function storeProjectList(projects: Project[]) {
-    await setStoreItem("projectList", projects);
+    const dto: ProjectDTO[] = projects.map(p => ({
+        name: p.name,
+        path: p.path
+    }));
+
+    console.log("dto:", dto);
+
+    await setStoreItem("projectList", dto);
 }
 
 
@@ -92,6 +97,8 @@ export async function loadStoredProjects(): Promise<Project[]> {
         name: string;
         path: string
     }[]>("projectList");
+
+    console.log("parsed:", parsed);
     
     if (!parsed || !Array.isArray(parsed)) return [];
 

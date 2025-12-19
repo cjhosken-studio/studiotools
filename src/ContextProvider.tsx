@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, ReactNode, useEffect } from "react";
-import { initStore, loadStoredContext, loadStoredProjects, storeContext, storeProjectList } from "./Storage";
+import { loadStoredContext, loadStoredProjects, storeContext, storeProjectList } from "./Storage";
 import Context from "./types/Context"
 import Project from "./types/Project";
 
@@ -14,27 +14,33 @@ const AppContext = createContext<{
 export function ContextProvider({ children } : { children: ReactNode }) {
     const [context, setContextState] = useState<Context>(new Context(new Project("", ""), ""))
     const [projectList, setProjectListState] = useState<Project[]>([]);
+    const [hydrated, setHydrated] = useState(false);
 
     const setContext = (ctx: Context) => {
         setContextState(ctx);
-        storeContext(ctx).catch(console.error);
+        if (hydrated) {
+            storeContext(ctx).catch(console.error);
+        }
     }
 
     const setProjectList = (list: Project[]) => {
         setProjectListState(list);
-        storeProjectList(list).catch(console.error)
+        if (hydrated) {
+            storeProjectList(list).catch(console.error)
+        }
     }
 
     useEffect(() => {
         (async () => {
-            await initStore();
-
             const storedCtx = await loadStoredContext();
 
             if (storedCtx) setContextState(storedCtx);
 
             const storedProjects = await loadStoredProjects();
-            if (storedProjects) setProjectListState(storedProjects)
+            console.log(storedProjects);
+            if (storedProjects.length) setProjectListState(storedProjects);
+
+            setHydrated(true);
         })();
     }, []);
 
@@ -45,9 +51,8 @@ export function ContextProvider({ children } : { children: ReactNode }) {
     )
 }
 
-
 export function useAppContext() {
-    const ctx = useContext(AppContext)
+    const ctx = useContext(AppContext);
     if (!ctx) throw new Error("useAppContext must be used inside ContextProvider")
     return ctx
 }

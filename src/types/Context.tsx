@@ -1,6 +1,6 @@
 import Project from "./Project.tsx"
 import { readDir, DirEntry, exists } from "@tauri-apps/plugin-fs";
-import { dirname } from "@tauri-apps/api/path";
+import { basename, dirname, normalize } from "@tauri-apps/api/path";
 
 export default class Context {
     project: Project = new Project("", "");
@@ -22,8 +22,10 @@ export default class Context {
 };
 
 export async function isValidCwd(cwd: string) {
-    if (await exists(cwd)) {
-        const project = await getProjectFromCwd(cwd);
+    let current = (await normalize(cwd)).replace(/[\\/]+$/, "");
+
+    if (await exists(current)) {
+        const project = await getProjectFromCwd(current);
         return project;
     }
 
@@ -31,14 +33,16 @@ export async function isValidCwd(cwd: string) {
 }
 
 export async function getProjectFromCwd(cwd: string): Promise<Project> {
-    let current = cwd;
+    let current = (await normalize(cwd)).replace(/[\\/]+$/, "");
+
+    console.log(current);
 
     while (true) {
         const entires = await readDir(current);
         const hasProjectConfig = entires.some((e: DirEntry) => e.name == "project.yaml");
 
         if (hasProjectConfig) {
-            const parts = current.split(/[\\/]/);
+            const parts = current.split(/[\\/]/).filter(Boolean);
             const projectName = parts[parts.length - 1];
             return new Project(projectName, current);
         }

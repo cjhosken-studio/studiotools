@@ -7,6 +7,11 @@ import yaml from "js-yaml";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFolder, faFire, faKitchenSet, faLightbulb, faPersonRunning, faFilm, faClapperboard, faBox, faBone, faImages, faHammer, faCameraRetro, faToolbox, faCube, faCubes, faSwatchbook, faArrowsToCircle, faObjectGroup } from "@fortawesome/free-solid-svg-icons";
 
+export type ProjectDTO = {
+  name: string;
+  path: string;
+}
+
 export default class Project {
   name: string = "";
   path: string = "";

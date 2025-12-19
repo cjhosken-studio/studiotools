@@ -14,21 +14,42 @@ function NavigationBar() {
 
     useEffect(() => {
         setDisplayCwd(context.cwd);
-        setProjectList(projectList);
+
+        updateProjectList();
     }, [context])
 
     const handleProjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const project = projectList.find(p => p.path === e.target.value);
-        if (project) setContext(new Context(project, project.path));
+        if (project) {
+            setContext(new Context(project, project.path));
+        }
     }
 
     const handleCwdChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const cwd = e.target.value;
-        
+
         setDisplayCwd(cwd);
 
-        if (await isValidCwd(cwd)) setContext(new Context(await getProjectFromCwd(cwd), cwd))
+        if (await isValidCwd(cwd)) {
+            setContext(new Context(await getProjectFromCwd(cwd), cwd));
+        }
     };
+
+    const updateProjectList = () => {
+        const project = context.project;
+
+        if (!project.name.trim()) return;
+
+        const next = [
+            project,
+            ...projectList.filter(
+                p => p.name !== project.name
+            )
+        ];
+
+        setProjectList(next);
+    };
+
 
     const setCwd = async () => {
         const cwd = await open({
