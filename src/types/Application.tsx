@@ -5,6 +5,12 @@ import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import Context from "./Context";
 import yaml from "js-yaml";
 
+interface ProjectConfig {
+    name?: string;
+    path?: string;
+    apps?: Application[];
+}
+
 export default class Application {
     name: string = "";
     icon: string | null = null;
@@ -207,7 +213,7 @@ export async function loadApplications(context: Context): Promise<Application[]>
 
         if (await exists(appConfigPath)) {
             const yamlText = await readTextFile(appConfigPath);
-            const data = yaml.load(yamlText) as any;
+            const data = yaml.load(yamlText) as ProjectConfig;
 
             if (data?.apps && Array.isArray(data.apps)) {
                 for (const entry of data.apps) {
@@ -215,7 +221,7 @@ export async function loadApplications(context: Context): Promise<Application[]>
                         new Application(
                             entry.name,
                             null,
-                            entry.path,
+                            entry.executable,
                             [".blend"],          // custom apps have no extension filters unless you later add it
                             "blender"
                         )

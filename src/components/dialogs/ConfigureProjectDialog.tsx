@@ -34,7 +34,7 @@ export default function ConfigureProjectDialog({
 
         const appConfigPath = await join(context.project.path, "apps.yaml");
 
-        let config: { apps?: Array<{ name: string; path: string }> } = {};
+        let config: { apps?: Array<{ name: string; executable: string }> } = {};
 
         try {
             const existing = await readTextFile(appConfigPath);
@@ -51,7 +51,7 @@ export default function ConfigureProjectDialog({
         if (!config.apps.some(a => a.name === exe)) {
             config.apps.push({
                 name: exe,
-                path: exe
+                executable: exe
             });
         }
 
