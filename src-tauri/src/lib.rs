@@ -233,11 +233,13 @@ fn launch(executable: String, id: String, path: String) {
     }
 
     if id == "nuke" {
+        let studiotools_root = Path::new("../plugins/nuke_studiotools").canonicalize().unwrap();
+
         #[cfg(target_os = "windows")]
         {
             Command::new("cmd")
-                .env("TEST", "lol")
-                .args([&executable, &path])
+                .env("NUKE_PATH", studiotools_root)
+                .args(&["/C", &executable, &path])
                 .spawn()
                 .unwrap();
         }
