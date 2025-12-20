@@ -10,3 +10,6 @@
 [submodule "plugins/houdini_studiotools"]
 	path = plugins/houdini_studiotools
 	url = git@github.com:cjhosken-studio/houdini_studiotools.git
+[submodule "plugins/nuke_studiotools"]
+	path = plugins/nuke_studiotools
+	url = https://github.com/cjhosken-studio/nuke_studiotools.git
