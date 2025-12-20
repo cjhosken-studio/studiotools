@@ -183,6 +183,7 @@ fn launch(executable: String, id: String, path: String) {
     }
 
     if id == "houdini" {
+        let studiotools_root = Path::new("../plugins/houdini_studiotools").canonicalize().unwrap();
         let load_script = Path::new("../plugins/houdini_studiotools/load.py").canonicalize().unwrap();
         let toolbar_path = append_env_var("HOUDINI_TOOLBAR_PATH", &format!("../plugins/houdini_studiotools/houdini/toolbar{}&", SEP));
         let otlscan_path = append_env_var("HOUDINI_OTLSCAN_PATH", &format!("../plugins/houdini_studiotools/houdini/otls{}&", SEP));
@@ -203,6 +204,7 @@ fn launch(executable: String, id: String, path: String) {
                 .env("HOUDINI_TOOLBAR_PATH", toolbar_path)
                 .env("HOUDINI_OTLSCAN_PATH", otlscan_path)
                 .env("HOUDINI_MENU_PATH", menu_path)
+                .env("STUDIOTOOLS", studiotools_root)
                 .arg(&path)
                 .spawn()
                 .expect("Failed to launch Houdini");
@@ -222,6 +224,7 @@ fn launch(executable: String, id: String, path: String) {
                 .env("HOUDINI_TOOLBAR_PATH", toolbar_path)
                 .env("HOUDINI_OTLSCAN_PATH", otlscan_path)
                 .env("HOUDINI_MENU_PATH", menu_path)
+                .env("STUDIOTOOLS", studiotools_root)
                 .args(&["/C", &executable, &path])
                 .spawn()
                 .unwrap();
