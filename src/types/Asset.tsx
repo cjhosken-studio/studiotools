@@ -5,6 +5,7 @@ import yaml from "js-yaml";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { getTypeFromFolder } from "./Project";
 import { getFolderSize } from "../utils/Files";
+import { formatVersion } from "../utils/Format";
 
 export default class Asset {
     name: string = "";
@@ -95,7 +96,9 @@ export async function loadAssets(path: string): Promise<Asset[]> {
                         const publishedEntry = await join(published, name);
                         if (await exists(publishedEntry)) {
                             const published_version = await getVersionFromAssetPath(publishedEntry);
-                            is_published = published_version === version;
+                            console.log("current v", formatVersion(version));
+                            console.log("published v", published_version);
+                            is_published = published_version === formatVersion(version);
                         }
 
                         const stats = await stat(root);
@@ -140,17 +143,17 @@ export async function loadAssets(path: string): Promise<Asset[]> {
     return assets;
 }
 
-export async function getVersionFromAssetPath(asset_path: string): Promise<number> {
+export async function getVersionFromAssetPath(asset_path: string): Promise<string> {
     try {
         const metadataYamlPath = await join(asset_path, "metadata.yaml");
-        if (!(await exists(metadataYamlPath))) return 0;
+        if (!(await exists(metadataYamlPath))) return "v000";
 
         const content = await readTextFile(metadataYamlPath);
-        const data = yaml.load(content) as { version: number };
-        return data.version ?? 0;
+        const data = yaml.load(content) as { version: string };
+        return data.version ?? "v000";
     } catch (err) {
         console.error("Error reading metadata.yaml:", err);
-        return 0;
+        return "v000";
     }
 }
 
