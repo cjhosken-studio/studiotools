@@ -29,8 +29,12 @@ export default class Asset {
     }
 
     getThumbnail() {
+        if (this.type === "images") {
+            return convertFileSrc(this.root + "/" + "render.0011.exr");
+        }
+
         if (this.thumbnail) {
-            return convertFileSrc(this.thumbnail!)
+            return convertFileSrc(this.thumbnail!);
         }
 
         return ""
@@ -57,8 +61,6 @@ export async function loadAssets(path: string): Promise<Asset[]> {
                         if (!(await exists(metadata))) {
                             return null;
                         }
-
-                        console.log(path);
 
                         const version = getVersion(entry.name);
                         const name = removeVersionFromName(entry.name);

@@ -86,7 +86,6 @@ export async function storeProjectList(projects: Project[]) {
         path: p.path
     }));
 
-    console.log("dto:", dto);
 
     await setStoreItem("projectList", dto);
 }
@@ -98,7 +97,6 @@ export async function loadStoredProjects(): Promise<Project[]> {
         path: string
     }[]>("projectList");
 
-    console.log("parsed:", parsed);
     
     if (!parsed || !Array.isArray(parsed)) return [];
 

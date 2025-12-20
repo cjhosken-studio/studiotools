@@ -37,7 +37,6 @@ export function ContextProvider({ children } : { children: ReactNode }) {
             if (storedCtx) setContextState(storedCtx);
 
             const storedProjects = await loadStoredProjects();
-            console.log(storedProjects);
             if (storedProjects.length) setProjectListState(storedProjects);
 
             setHydrated(true);

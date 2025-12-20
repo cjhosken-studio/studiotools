@@ -33,3 +33,7 @@
     align-items: center;
     height: auto;
 }
+
+#properties-panel #viewer * {
+    width: 100%;
+}
