@@ -4,6 +4,7 @@ import { getVersion, removeVersionFromName } from "../utils/Version";
 import yaml from "js-yaml";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { getTypeFromFolder } from "./Project";
+import { getFolderSize } from "../utils/Files";
 
 export default class Asset {
     name: string = "";
@@ -28,16 +29,34 @@ export default class Asset {
         this.thumbnail = thumbnail;
     }
 
-    getThumbnail() {
-        if (this.type === "images") {
-            return convertFileSrc(this.root + "/" + "render.0011.exr");
-        }
-
+    getThumbnail(): string[] {
         if (this.thumbnail) {
-            return convertFileSrc(this.thumbnail!);
+            return [convertFileSrc(this.thumbnail!)];
         }
 
-        return ""
+        return []
+    }
+
+    async getImages(): Promise<string[]> {
+        if (this.type !== "images") return [];
+
+        try {
+            const entires = await readDir(this.root);
+
+            return entires.sort((a, b) => {
+                // sort numerically: render.0001.exr < render.0010.exr
+                const na = a.name?.match(/\d+/)?.[0] ?? "0";
+                const nb = b.name?.match(/\d+/)?.[0] ?? "0";
+                return Number(na) - Number(nb);
+            })
+                .map((e) =>
+                    convertFileSrc(`${this.root}/${e.name}`)
+                )
+        }
+        catch (err) {
+            console.error("Failed to read image sequence:", err);
+            return [];
+        }
     }
 }
 
@@ -81,11 +100,17 @@ export async function loadAssets(path: string): Promise<Asset[]> {
 
                         const stats = await stat(root);
 
+                        let size = stats.size;
+
+                        if (type === "images") {
+                            size = await getFolderSize(root);
+                        }
+
                         return new Asset(
                             name,
                             path,
                             version ?? 0,
-                            stats.size ?? 0,
+                            size ?? 0,
                             stats.mtime ? new Date(stats.mtime) : null,
                             root,
                             type,

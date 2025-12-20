@@ -125,23 +125,23 @@ export async function loadApplications(context: Context): Promise<Application[]>
 
                 if (entry.name.includes("Nuke")) {
                     const folderName = entry.name;
-                    const match = folderName.match(/Nuke\d+\.\d+/);
+                    const match = folderName.match(/Nuke\d+\.\d+v\d+/);
                     const files = [".nk"]
 
                     if (match) {
-                        const base_exe = await join(foundryRoot, entry.name, `${match[0]}.exe`);
+                        const launcher_match = folderName.match(/Nuke\d+\.\d/);
+                        const base_exe = await join(foundryRoot, entry.name, `${launcher_match![0]}.exe`);
 
                         applications.push(
                             new Application(`${entry.name}`, null, base_exe, files, "nuke")
                         )
+
+                        const x_exe = await join(foundryRoot, entry.name, `NukeXApp.exe`);
+
+                        applications.push(
+                            new Application(`${entry.name} X`, null, x_exe, files, "nuke")
+                        )
                     }
-
-
-                    const x_exe = await join(foundryRoot, entry.name, "NukeXApp.exe")
-
-                    applications.push(
-                        new Application(`${entry.name} X`, null, x_exe, files, "nuke")
-                    )
                 }
             }
         }

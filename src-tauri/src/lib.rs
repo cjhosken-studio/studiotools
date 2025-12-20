@@ -232,6 +232,17 @@ fn launch(executable: String, id: String, path: String) {
 
     }
 
+    if id == "nuke" {
+        #[cfg(target_os = "windows")]
+        {
+            Command::new("cmd")
+                .env("TEST", "lol")
+                .args([&executable, &path])
+                .spawn()
+                .unwrap();
+        }
+    }
+
     //
     // ---------------------------------------------------------
     // 2 — USDVIEW

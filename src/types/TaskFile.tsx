@@ -52,7 +52,7 @@ export async function loadTaskFiles(task: string) : Promise<TaskFile[]> {
         
     const wip = await join(task, "wip");
 
-    const extensions = [".blend", ".hip", ".hipnc"];
+    const extensions = [".blend", ".hip", ".hipnc", ".nk", ".nknc"];
 
     async function scanDir(dir: string) {
         const entries = await readDir(dir);

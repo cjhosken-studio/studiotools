@@ -1,3 +1,4 @@
+import Asset from "../types/Asset";
 import TaskFile from "../types/TaskFile";
 
 
@@ -60,6 +61,13 @@ export function formatIconFromTaskfile(taskfile: TaskFile) {
     return `/icons/${folderName}.png`;
 }
 
-export function formatIconFromAssetType(type: string) {
-    return `/icons/${type}.png`;
+export async function formatIconFromAsset(asset: Asset) : Promise<string[]> {
+    if (asset.type === "images") {
+        const images = await asset.getImages()
+        const idx = Math.floor(images.length/2)
+
+        return [images[idx]];
+    } else {
+        return asset.getThumbnail();
+    }
 }

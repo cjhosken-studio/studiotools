@@ -5,7 +5,7 @@ import "./AssetListView.css";
 import Asset, { loadAssets } from "../../types/Asset";
 import { invoke } from "@tauri-apps/api/core";
 import { dirname, join } from "@tauri-apps/api/path";
-import { formatFileSize, formatIconFromAssetType, formatTime, formatVersion } from "../../utils/Format";
+import { formatFileSize, formatIconFromAsset, formatTime, formatVersion } from "../../utils/Format";
 import { MenuAction } from "../../types/Menu";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import DeleteDialog from "../dialogs/DeleteDialog";
@@ -16,6 +16,7 @@ import { exists, remove } from "@tauri-apps/plugin-fs";
 import { useAppContext } from "../../ContextProvider";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRefresh } from "@fortawesome/free-solid-svg-icons";
+import ImageViewer from "./ImageViewer/ImageViewer";
 
 export default function AssetListView(
     {
@@ -37,6 +38,27 @@ export default function AssetListView(
     const [menuPosition, setMenuPosition] = useState<{ x: number, y: number } | null>(null);
 
     const [pathToDelete, setPathToDelete] = useState<string | null>(null);
+
+    const [icons, setIcons] = useState<Record<string, string[]>>({});
+
+    useEffect(() => {
+        const loadIcons = async () => {
+            const result: Record<string, string[]> = {};
+
+            for (const asset of assets) {
+            result[asset.path] = await formatIconFromAsset(asset);
+            }
+
+            setIcons(result);
+        };
+
+        if (!assets) return;
+
+        if (assets.length > 0) {
+            loadIcons();
+        }
+        }, [assets]);
+
 
     useEffect(() => {
         const handleClick = () => { setMenuPosition(null) };
@@ -158,7 +180,7 @@ export default function AssetListView(
                                         }
                                         
                                         } onContextMenu={(e) => handleRightClick(e, asset)} className={`listViewItem ${asset.published ? "published" : ""} ${selectedAsset && asset.path == selectedAsset.path ? "selected" : ""}`}>
-                                        <td><img src={formatIconFromAssetType(asset.type)} /></td>
+                                        <td id="icon"><ImageViewer frames={icons[asset.path]}/></td>
                                         <td>{asset.name}</td>
                                         <td>{formatVersion(asset.version)}</td>
                                         <td>{formatFileSize(asset.size)} </td>
