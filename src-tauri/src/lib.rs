@@ -106,6 +106,22 @@ pub fn find_blender_python(blender_exe: &Path, is_windows: bool) -> PathBuf {
     }
 }
 
+fn python_has_modules(python: &Path, modules: &[&str]) -> bool {
+    let import_list = modules
+        .iter()
+        .map(|m| format!("import {}", m))
+        .collect::<Vec<_>>()
+        .join("; ");
+
+    std::process::Command::new(python)
+        .args(["-c", &import_list])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+
+
 //
 // ---------------------------------------------------------
 // Launch command (main entry point called from JS)
@@ -139,26 +155,28 @@ fn launch(executable: String, id: String, path: String) {
         //
         // Ensure pip exists
         //
-        run_direct(
-            &blender_python,
-            &["-m".into(), "ensurepip".into()],
-            &[],
-        );
+        let required_modules = ["PySide6", "yaml"]; // example
 
-        //
-        // Install Python requirements
-        //
-        run_direct(
-            &blender_python,
-            &[
-                "-m".into(),
-                "pip".into(),
-                "install".into(),
-                "-r".into(),
-                requirements.to_string_lossy().to_string(),
-            ],
-            &[],
-        );
+
+        if !python_has_modules(&blender_python, &required_modules) {
+            run_direct(
+                &blender_python,
+                &["-m".into(), "ensurepip".into()],
+                &[],
+            );
+
+            run_direct(
+                &blender_python,
+                &[
+                    "-m".into(),
+                    "pip".into(),
+                    "install".into(),
+                    "-r".into(),
+                    requirements.to_string_lossy().to_string(),
+                ],
+                &[],
+            );
+        }
 
         //
         // Launch Blender normally with the load script
@@ -174,10 +192,7 @@ fn launch(executable: String, id: String, path: String) {
         cmd.env("PYTHONPATH", submodules_path);
         cmd.env("INPIPE", "true");
 
-        let status = cmd.status().expect("Failed to launch Blender");
-        if !status.success() {
-            eprintln!("Blender exited with non-zero code.");
-        }
+        let child = cmd.spawn().expect("Failed to launch Blender");
 
         return;
     }
@@ -192,6 +207,30 @@ fn launch(executable: String, id: String, path: String) {
         #[cfg(not(target_os = "windows"))]
         {
             let hython = parent.join("hython");
+
+
+            let requirements = studiotools_root.join("requirements.txt");
+            let required_modules = ["PyYAML"];
+
+            if !python_has_modules(&hython, &required_modules) {
+                // Bootstrap pip if necessary
+                Command::new(&hython)
+                    .args(["-m", "ensurepip"])
+                    .status()
+                    .expect("ensurepip failed");
+
+                // Install requirements
+                Command::new(&hython)
+                    .args([
+                        "-m",
+                        "pip",
+                        "install",
+                        "-r",
+                        requirements.to_str().unwrap(),
+                    ])
+                    .status()
+                    .expect("pip install failed");
+            }
 
             Command::new(&hython)
                 .arg(load_script)
