@@ -3,20 +3,17 @@ import { useEffect, useState } from "react";
 import "./ListView.css";
 import "./AssetListView.css";
 import Asset, { loadAssets } from "../../types/Asset";
-import { invoke } from "@tauri-apps/api/core";
-import { dirname, join } from "@tauri-apps/api/path";
 import { formatFileSize, formatIconFromAsset, formatTime, formatVersion } from "../../utils/Format";
 import { MenuAction } from "../../types/Menu";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 import DeleteDialog from "../dialogs/DeleteDialog";
 import { platform } from "@tauri-apps/plugin-os";
 import { openPath } from "@tauri-apps/plugin-opener";
-import { removeVersionFromName } from "../../utils/Version";
-import { exists, remove } from "@tauri-apps/plugin-fs";
 import { useAppContext } from "../../ContextProvider";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRefresh } from "@fortawesome/free-solid-svg-icons";
 import ImageViewer from "./ImageViewer/ImageViewer";
+import setAsPublished from "../../utils/Publishing";
 
 export default function AssetListView(
     {
@@ -108,18 +105,10 @@ export default function AssetListView(
         return () => clearInterval(interval);
     }, [context.cwd]);
 
-    async function launchUSDView(asset: Asset) {
-        invoke("launch", { executable: "usdview", id: "usdview", path: await join(asset.path, "stage.usd") })
-    }
-
     const handleRightClick = (e: React.MouseEvent, asset: Asset) => {
         e.preventDefault();
 
         const actions: MenuAction[] = []
-
-        if (asset.type === "usd") {
-            actions.push({ label: "Open with USDView", onClick: () => launchUSDView(asset) });
-        }
 
         actions.push({ label: "Set as Published", onClick: async () => await setAsPublished(asset) });
         const prettyPlatform = platform().charAt(0).toUpperCase() + platform().slice(1);
@@ -134,19 +123,6 @@ export default function AssetListView(
     const handleMenuAction = (action: MenuAction) => {
         setMenuPosition(null);
         action.onClick();
-    }
-
-    async function setAsPublished(asset: Asset) {
-        const publishedPath = await join(await dirname(await dirname(asset.path)), "published");
-
-        const cleanName = removeVersionFromName(asset.name);
-        const symlinkPath = await join(publishedPath, cleanName);
-
-        if (await exists(symlinkPath)) {
-            await remove(symlinkPath);
-        }
-
-        invoke("symlink", { asset: asset.path, symlink: symlinkPath });
     }
 
     return (

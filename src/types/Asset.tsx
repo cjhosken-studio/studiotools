@@ -96,9 +96,9 @@ export async function loadAssets(path: string): Promise<Asset[]> {
                         const publishedEntry = await join(published, name);
                         if (await exists(publishedEntry)) {
                             const published_version = await getVersionFromAssetPath(publishedEntry);
-                            console.log("current v", formatVersion(version));
+                            console.log("current v", version.toString());
                             console.log("published v", published_version);
-                            is_published = published_version === formatVersion(version);
+                            is_published = published_version.toString() === version.toString();
                         }
 
                         const stats = await stat(root);

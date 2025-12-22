@@ -1,3 +1,6 @@
-.listViewTable #icon {
-    width: 10%;
+.listViewTable #icon * {
+    align-self: center;
+    justify-self: center;
+    margin-top: 2.5%;
+    height: 50%;
 }

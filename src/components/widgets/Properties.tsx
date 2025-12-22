@@ -5,6 +5,7 @@ import { faClose } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useState } from "react";
 import ImageViewer from "./ImageViewer/ImageViewer.tsx";
 import { formatVersion } from "../../utils/Format.tsx";
+import setAsPublished from "../../utils/Publishing.ts";
 
 export default function PropertiesPanel({
     selectedAsset,
@@ -49,10 +50,7 @@ export default function PropertiesPanel({
                     <ImageViewer frames={images}/>
 
                     <div className="row">
-                        <button>Set as Published</button>
-                        {selectedAsset.type === "usd" && (
-                            <button>Open in USDView</button>
-                        )}
+                        <button onClick={async () => setAsPublished(selectedAsset)}>Set as Published</button>
                     </div>
                 </div>
             )}
