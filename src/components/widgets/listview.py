@@ -73,7 +73,6 @@ class AssetListView(ListView):
         name = os.path.basename(path)
         item = QStandardItem(name)
 
-        # Optional: custom icon logic
         item.setIcon(QIcon.fromTheme("document"))
         item.setData(path, role=Qt.UserRole)
 

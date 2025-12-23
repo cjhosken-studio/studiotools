@@ -31,8 +31,7 @@ class NavigationBar(QWidget):
 
     def _setup_ui(self):
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
+        layout.setSpacing(2)
 
         self.project_select = QComboBox()
         self.project_select.currentIndexChanged.connect(self._on_project_changed)
@@ -57,7 +56,10 @@ class NavigationBar(QWidget):
         cwd_layout.addWidget(self.create_button)
 
         layout.addLayout(cwd_layout)
-        
+
+    def setContext(self, context):
+        self.context = context
+        self._sync_from_context()
 
     def _sync_from_context(self):
         self.cwd_input.setText(self.context.cwd)

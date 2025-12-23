@@ -92,6 +92,8 @@ def createProject(path):
 
     for item in DEFAULT_PROJECT_STRUCTURE:
         createFolder(path, item)
+        
+    return project
 
 def createFolder(parent_path, item):
     item_path = os.path.join(parent_path, item["name"])
@@ -118,6 +120,10 @@ def createFolder(parent_path, item):
 
 def getTypeFromFolder(path):
     folder_config = os.path.join(path, "folder.yaml")
+    project_config = os.path.join(path, "project.yaml")
+    
+    if os.path.isfile(project_config):
+        return "project", "custom"
 
     if os.path.isfile(folder_config):
         with open(folder_config, "r", encoding="utf-8") as f:

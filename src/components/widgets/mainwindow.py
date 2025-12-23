@@ -30,7 +30,6 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(central_widget)
         
         self.nav = NavigationBar(self.context, self.project_list)
-        self.nav.setFixedHeight(280)
 
         self.nav.contextChanged.connect(self._on_context_changed)
         self.nav.projectListChanged.connect(self._on_project_list_changed)
@@ -41,6 +40,7 @@ class MainWindow(QMainWindow):
         main_layout = QHBoxLayout(main_widget)
 
         self.tree_view = TreeView(self.context)
+        self.tree_view.contextChanged.connect(self._on_context_changed)
         main_layout.addWidget(self.tree_view)
         
         list_widget = QWidget(self)
@@ -60,9 +60,6 @@ class MainWindow(QMainWindow):
 
     def _on_context_changed(self, context):
         self.context = context
-        self.tree_view.setContext(self.context)
-        self.task_list_view.refresh(self.context)
-        self.asset_list_view.refresh(self.context)
         self.save_state()
 
     def _on_project_list_changed(self, project_list):
@@ -72,3 +69,7 @@ class MainWindow(QMainWindow):
     def save_state(self):
         saveContext(self.context)
         saveProjectList(self.project_list)
+        self.nav.setContext(self.context)
+        self.tree_view.setContext(self.context)
+        self.task_list_view.refresh(self.context)
+        self.asset_list_view.refresh(self.context)

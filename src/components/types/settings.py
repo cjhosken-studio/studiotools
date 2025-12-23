@@ -1,5 +1,5 @@
 from PySide6.QtCore import QSettings
-import sys
+import os
 from .context import Context
 from .project import Project
 
@@ -17,7 +17,7 @@ def loadProjectList():
 
     project_list = [
         Project.from_dict(p)
-        for p in projects_data
+        for p in projects_data if os.path.exists(p["path"])
     ]
 
     return project_list
