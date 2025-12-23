@@ -2,11 +2,14 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QWidget,
     QVBoxLayout,
+    QHBoxLayout,
     QLabel
 )
 from PySide6.QtCore import Qt
 from ..types.settings import *
 from .navigation import NavigationBar
+from .treeview import TreeView
+from .listview import TaskListView, AssetListView
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -34,10 +37,30 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(self.nav)
 
+        main_widget = QWidget(self)
+        main_layout = QHBoxLayout(main_widget)
+
+        self.tree_view = TreeView(self.context)
+        main_layout.addWidget(self.tree_view)
+        
+        list_widget = QWidget(self)
+        list_layout = QVBoxLayout(list_widget)
+
+        self.task_list_view = TaskListView(self.context)
+        self.asset_list_view = AssetListView(self.context)
+
+        list_layout.addWidget(self.task_list_view)
+        list_layout.addWidget(self.asset_list_view)
+
+        main_layout.addWidget(list_widget)
+
+        layout.addWidget(main_widget)
+
         self.setCentralWidget(central_widget)
 
     def _on_context_changed(self, context):
         self.context = context
+        self.tree_view.setContext(self.context)
         self.save_state()
 
     def _on_project_list_changed(self, project_list):

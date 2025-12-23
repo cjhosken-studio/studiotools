@@ -4,6 +4,8 @@ from datetime import datetime
 
 from PySide6.QtGui import QIcon
 
+import qtawesome as qta
+
 class Project:
     def __init__(self):
         self.name = ""
@@ -126,31 +128,32 @@ def getTypeFromFolder(path):
     
 def getIconFromTypes(type, subtype):
     if (type == "project"):
-        return QIcon()
+        return qta.icon("fa6s.clapperboard")
     
     if (type == "taskarea"):
-        if (subtype == "shot"): return QIcon()
-        if (subtype == "asset"): return QIcon()
+        if (subtype == "shot"): return qta.icon("fa6s.film")
+        if (subtype == "asset"): return qta.icon("fa6s.cube")
 
-        return QIcon()
+        return qta.icon("fa6s.box-archive")
 
     if (type == "task"):
-        if (subtype == "scan"): return QIcon()
-        if (subtype == "model"): return QIcon()
-        if (subtype == "texture"): return QIcon()
-        if (subtype == "lookdev"): return QIcon()
-        if (subtype == "rig"): return QIcon()
+        if (subtype == "scan"): return qta.icon("fa6s.camera")
+        if (subtype == "model"): return qta.icon("fa6s.trowel")
+        if (subtype == "texture"): return qta.icon("fa6s.paintbrush")
+        if (subtype == "lookdev"): return qta.icon("fa6s.rainbow")
+        if (subtype == "rig"): return qta.icon("fa6s.bone")
+        if (subtype == "groom"): return qta.icon("fa6s.feather")
 
-        if (subtype == "tool"): return QIcon()
+        if (subtype == "tool"): return qta.icon("fa6s.wrench")
 
-        if (subtype == "track"): return QIcon()
-        if (subtype == "comp"): return QIcon()
+        if (subtype == "track"): return qta.icon("fa6s.arrows-to-dot")
+        if (subtype == "comp"): return qta.icon("fa6s.images")
 
-        if (subtype == "layout"): return QIcon()
-        if (subtype == "animate"): return QIcon()
-        if (subtype == "fx"): return QIcon()
-        if (subtype == "light"): return QIcon()
+        if (subtype == "layout"): return qta.icon("fa6s.tree-city")
+        if (subtype == "animate"): return qta.icon("fa6s.person-walking")
+        if (subtype == "fx"): return qta.icon("fa6s.fire")
+        if (subtype == "light"): return qta.icon("fa6s.lightbulb")
 
-        return QIcon()
+        return qta.icon("fa6s.shapes")
     
-    return QIcon()
+    return qta.icon("fa6s.folder")
