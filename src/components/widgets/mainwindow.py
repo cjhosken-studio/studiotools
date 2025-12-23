@@ -61,6 +61,8 @@ class MainWindow(QMainWindow):
     def _on_context_changed(self, context):
         self.context = context
         self.tree_view.setContext(self.context)
+        self.task_list_view.refresh(self.context)
+        self.asset_list_view.refresh(self.context)
         self.save_state()
 
     def _on_project_list_changed(self, project_list):
