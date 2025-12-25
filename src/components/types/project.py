@@ -98,7 +98,7 @@ def createProject(path):
 def createFolder(parent_path, item):
     item_path = os.path.join(parent_path, item["name"])
 
-    os.makedirs(item_path)
+    os.makedirs(item_path, exist_ok=True)
         
     item_config = os.path.join(item_path, "folder.yaml")
 
@@ -117,6 +117,10 @@ def createFolder(parent_path, item):
             sort_keys=False,
             default_flow_style=False
         )    
+        
+    if item.get('type', "folder") == "task":
+        for subfolder in ["wip", "versions", "published"]:
+            os.makedirs(os.path.join(item_path, subfolder), exist_ok=True)
 
 def getTypeFromFolder(path):
     folder_config = os.path.join(path, "folder.yaml")

@@ -175,7 +175,7 @@ class TreeView(QWidget):
         menu.exec(self.tree.viewport().mapToGlobal(position))
         
     def _configure_project(self):
-        dialog = ProjectConfigurationDialog(self.context.project)
+        dialog = ProjectConfigurationDialog(self.context)
         dialog.exec()
     
     def _open(self, file_path):

@@ -10,6 +10,8 @@ from ..types.settings import *
 from .navigation import NavigationBar
 from .treeview import TreeView
 from .listview import TaskListView, AssetListView
+from .focusview import FocusView
+from ..types.asset import *
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -48,15 +50,25 @@ class MainWindow(QMainWindow):
 
         self.task_list_view = TaskListView(self.context)
         self.asset_list_view = AssetListView(self.context)
+        self.asset_list_view.selected.connect(self._on_asset_select)
 
         list_layout.addWidget(self.task_list_view)
         list_layout.addWidget(self.asset_list_view)
 
         main_layout.addWidget(list_widget)
+        
+        self.focus_view = FocusView(None)
+        self.focus_view.setVisible(self.focus_view.hasAsset())
+        main_layout.addWidget(self.focus_view)
+
 
         layout.addWidget(main_widget)
 
         self.setCentralWidget(central_widget)
+        
+    def _on_asset_select(self, asset):
+        self.focus_view.setAsset(asset)
+        self.focus_view.setVisible(self.focus_view.hasAsset())
 
     def _on_context_changed(self, context):
         self.context = context

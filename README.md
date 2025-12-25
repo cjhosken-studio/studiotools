@@ -25,6 +25,16 @@
 
 ---
 
+## Building
+
+You will need to build OpenUSD and install it into plugins/usd/install. Specifically, the usdview and python modules are needed.
+
+
+## Requirements
+Blender 5.0+
+Houdini 21.0+
+Nuke 17.0+
+
 ## 📬 Contact & Info
 
 This repository is maintained by **Christopher Hosken**.
