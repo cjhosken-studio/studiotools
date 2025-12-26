@@ -51,7 +51,14 @@ jobs:
         shell: cmd
 
       - name: Install Pre-Requesists (venv)
-        run: python -m pip install -r ./requirements.txt
+        run: |
+          .venv/bin/python -m pip install -r ./requirements.txt
+        if: runner.os != 'Windows'
+
+      - name: Install Pre-Requesists (venv, Windows)
+        if: runner.os == 'Windows'
+        run: .venv\Scripts\python -m pip install -r ./requirements.txt
+        shell: cmd
 
       - name: Create USD directory
         run: mkdir usd
@@ -59,15 +66,23 @@ jobs:
       - name: Clone OpenUSD
         run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git usd/source
 
-      - name: Build OpenUSD (venv)
-        run: python ./usd/source/build_scripts/build_usd.py ./usd/install
+      - name: Build OpenUSD (venv, Windows)
+        if: runner.os != 'Windows'
+        run: |
+          .venv/bin/python ./usd/source/build_scripts/build_usd.py ./usd/install
+        shell: bash
+        
+      - name: Build OpenUSD (venv, Windows)
+        if: runner.os == 'Windows'
+        run: |
+          .venv\Scripts\python ./usd/source/build_scripts/build_usd.py ./usd/install
+        shell: cmd
 
       # Linux + macOS
       - name: Run launch script (Unix)
         if: runner.os != 'Windows'
         run: |
           chmod +x ./launch.sh
-          source .venv/bin/activate
           ./launch.sh
         shell: bash
 
@@ -75,6 +90,5 @@ jobs:
       - name: Run launch script (Windows)
         if: runner.os == 'Windows'
         run: |
-          call .venv\Scripts\activate
           launch.bat
         shell: cmd
