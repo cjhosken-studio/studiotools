@@ -83,6 +83,7 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           chmod +x ./launch.sh
+          source .venv/bin/activate
           ./launch.sh
         shell: bash
 
@@ -90,5 +91,6 @@ jobs:
       - name: Run launch script (Windows)
         if: runner.os == 'Windows'
         run: |
+          call .venv\Scripts\activate.bat
           launch.bat
         shell: cmd
