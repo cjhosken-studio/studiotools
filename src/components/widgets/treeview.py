@@ -122,9 +122,7 @@ class TreeView(QWidget):
         
         self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tree.customContextMenuRequested.connect(self._show_context_menu)
-        self.tree.selectionModel().currentChanged.connect(
-            self._on_current_changed
-        )
+        self.tree.selectionModel().currentChanged.connect(self._on_current_changed)
 
         # UI/UX refinements
         self.tree.setHeaderHidden(True)

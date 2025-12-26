@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout
-from pxr import Usd
-
-from pxr.Usdviewq.stageView import StageView
+from .usdviewer import USDViewer
+from .imageviewer import ImageViewer
 
 class AssetViewer(QWidget):
     def __init__(self, asset):
@@ -14,40 +13,31 @@ class AssetViewer(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
                 
-        self.model = StageView.DefaultDataModel()
+        self.usd_viewer = USDViewer()
 
-        self.view = StageView(dataModel=self.model)
-        self.view.setVisible(False)
+        self.image_viewer = ImageViewer()
 
-        layout.addWidget(self.view) 
+        layout.addWidget(self.usd_viewer) 
+        layout.addWidget(self.image_viewer)
 
         self.setLayout(layout)
         
     def refresh(self, asset):
         self.asset = asset
 
-        if self.view:
-            self.view.closeRenderer()
-            self.layout().removeWidget(self.view)
-            self.view.deleteLater()
-            self.view = None
-
-        if asset.asset_type != "usd":
-            return
-
-        self.model = StageView.DefaultDataModel()
-        self.model.stage = Usd.Stage.Open(self.asset.root)
-
-        self.view = StageView(dataModel=self.model)
-        self.layout().addWidget(self.view)
-
-        self.view.setVisible(True)
-        self.view.updateView(resetCam=True, forceComputeBBox=True)
-
-
+        if asset.asset_type == "usd":
+            self.usd_viewer.setVisible(True)
+            self.image_viewer.setVisible(False)
+            self.usd_viewer.refresh(self.asset.root)
+            
+        elif asset.asset_type == "images":
+            self.usd_viewer.setVisible(False)
+            self.image_viewer.setVisible(True)
+            self.image_viewer.refresh(self.asset.root)
+            
         
     def closeEvent(self, event):
-        if self.view:
-            self.view.closeRenderer()
+        if self.usd_viewer:
+            self.usd_viewer.closeRenderer()
         return super().closeEvent(event)
         
