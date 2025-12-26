@@ -26,7 +26,11 @@ jobs:
             libxinerama-dev \
             libxcursor-dev \
             libxi-dev \
-            libxt-dev
+            libxt-dev \
+            libgl1-mesa-dev \
+            mesa-common-dev \
+            libglu1-mesa-dev \
+            libglvnd-dev
 
       - name: Setup Python 3.13
         uses: actions/setup-python@v5
