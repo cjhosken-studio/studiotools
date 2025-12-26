@@ -7,25 +7,47 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Python 3.13
+        uses: actions/setup-python@v5
         with:
-          node-version: 18
+          python-version: "3.13"
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-          components: rustfmt, clippy
+      - name: Create Python virtual environment
+        run: python -m venv .venv
 
-      - name: Install dependencies
-        run: npm install
+      - name: Verify Python (venv)
+        run: |
+          .venv/bin/python --version
+        if: runner.os != 'Windows'
 
-      - name: Build Tauri app
-        run: npm run tauri build
+      - name: Verify Python (venv, Windows)
+        if: runner.os == 'Windows'
+        run: .venv\Scripts\python --version
+        shell: cmd
+
+
+      # Linux + macOS
+      - name: Run launch script (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          chmod +x ./launch.sh
+          source .venv/bin/activate
+          ./launch.sh
+        shell: bash
+
+      # Windows
+      - name: Run launch script (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          call .venv\Scripts\activate
+          launch.bat
+        shell: cmd

@@ -6,10 +6,8 @@
 
 <div align="center">
 
-  <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=fff"/>
-  <img src="https://img.shields.io/badge/React_Typescript-%2320232a.svg?logo=react&logoColor=%2361DAFB"/>
-  <img src="https://img.shields.io/badge/Tauri-24C8D8?logo=tauri&logoColor=fff"/>
-  <img src="https://img.shields.io/badge/Rust-%23000000.svg?e&logo=rust&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff"/>
+  <img src="https://img.shields.io/badge/Qt-2CDE85?logo=Qt&logoColor=fffB"/>
 
   <br/>
 
@@ -24,6 +22,16 @@
 **Studiotools** is an open-source **USD** based pipeline tool for **VFX and CG Productions**.  
 
 ---
+
+## Building
+
+You will need to build OpenUSD and install it into usd/install. Specifically, the usdview and python modules are needed.
+
+
+## Requirements
+Blender 5.0+
+Houdini 21.0+
+Nuke 17.0+
 
 ## 📬 Contact & Info
 
