@@ -25,12 +25,25 @@ class AssetViewer(QWidget):
         
     def refresh(self, asset):
         self.asset = asset
-        self.view.setVisible(False)
-        
-        if asset.asset_type == "usd":
-            self.model.stage = Usd.Stage.Open(self.asset.root)
-            self.view.setVisible(True)
-            self.view.updateView(resetCam=True, forceComputeBBox=True)
+
+        if self.view:
+            self.view.closeRenderer()
+            self.layout().removeWidget(self.view)
+            self.view.deleteLater()
+            self.view = None
+
+        if asset.asset_type != "usd":
+            return
+
+        self.model = StageView.DefaultDataModel()
+        self.model.stage = Usd.Stage.Open(self.asset.root)
+
+        self.view = StageView(dataModel=self.model)
+        self.layout().addWidget(self.view)
+
+        self.view.setVisible(True)
+        self.view.updateView(resetCam=True, forceComputeBBox=True)
+
 
         
     def closeEvent(self, event):

@@ -5,6 +5,9 @@ from PySide6.QtCore import QCoreApplication
 from components.widgets.mainwindow import MainWindow
 import os
 
+import sys
+import os
+
 def main():
     app = QApplication([])
 

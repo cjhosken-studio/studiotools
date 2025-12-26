@@ -37,9 +37,12 @@ def getIconFromAssetType(asset_type):
     return QIcon(os.path.join(icons_dir, f"{asset_type}.png"))
 
 def overlay_warning_icon(base_icon: QIcon, size=32) -> QIcon:
+    current_file = __file__
     base_pixmap = base_icon.pixmap(size, size)
+    app_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(current_file))))
+    icons_dir = os.path.join(app_root, "public", "icons")
 
-    warning_icon = QIcon.fromTheme("dialog-warning")
+    warning_icon = QIcon(os.path.join(icons_dir, "houdini.png"))
     if warning_icon.isNull():
         return base_icon  # fail safely
 
@@ -48,8 +51,8 @@ def overlay_warning_icon(base_icon: QIcon, size=32) -> QIcon:
     painter = QPainter(base_pixmap)
     painter.setRenderHint(QPainter.RenderHint.Antialiasing)
     painter.drawPixmap(
-        base_pixmap.width() - warning_pixmap.width(),
-        base_pixmap.height() - warning_pixmap.height(),
+        base_pixmap.width()/2 - warning_pixmap.width(),
+        base_pixmap.height()/2 - warning_pixmap.height(),
         warning_pixmap
     )
     painter.end()

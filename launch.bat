@@ -11,10 +11,10 @@ REM Activate virtual environment
 call "%SCRIPT_DIR%\.venv\Scripts\activate"
 
 REM Extend PYTHONPATH
-set PYTHONPATH=%PYTHONPATH%;%SCRIPT_DIR%\plugins\usd\install\lib\python
+set PYTHONPATH=%PYTHONPATH%;%SCRIPT_DIR%\usd\install\lib\python
 
 REM Extend PATH
-set PATH=%PATH%;%SCRIPT_DIR%\plugins\usd\install\bin;%SCRIPT_DIR%\plugins\usd\install\lib
+set PATH=%PATH%;%SCRIPT_DIR%\usd\install\bin;%SCRIPT_DIR%\usd\install\lib
 
 REM Run the Python application
 python "%SCRIPT_DIR%\src\main.py"

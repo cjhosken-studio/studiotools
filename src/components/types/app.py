@@ -174,11 +174,13 @@ class AppBox(QFrame):
         os.makedirs(app_dir, exist_ok=True)
         
         env = os.environ.copy()
+        env.pop("PYTHONPATH", None)
         
         env["ST_PROJECT"] = self.context.project.path
         env["ST_TASK"] = os.path.basename(self.context.cwd)
         env["ST_TASKAREA"] = os.path.basename(os.path.dirname(self.context.cwd))
         env["ST_CWD"] = self.context.cwd
+        env["STUDIOTOOLS"] = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
         
         if not exe or not os.path.isfile(exe):
             return

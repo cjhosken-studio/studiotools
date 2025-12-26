@@ -222,6 +222,8 @@ class AssetListView(ListView):
         if asset.root.endswith(".usd"):
             usdview_action = menu.addAction("Open in USDView")
             
+        open_action = menu.addAction("Open in File Browser")
+            
         copy_path_action = menu.addAction("Copy Asset Path")
         publish_action = menu.addAction("Set as Published")
         
@@ -236,8 +238,15 @@ class AssetListView(ListView):
             self._delete_asset(path)
         elif action == copy_path_action:
             self._copy_path(path)
-        elif action == usdview_action:
-            self._open_usdview(path)    
+        elif action == open_action:
+            self._open_path(path)
+        
+        if asset.root.endswith(".usd"):
+            if action == usdview_action:
+                self._open_usdview(path)    
+        
+    def _open_path(self, path):
+        os.startfile(path)
         
     def _open_usdview(self, path):
         current_file = __file__
