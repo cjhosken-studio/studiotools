@@ -40,15 +40,15 @@ jobs:
       - name: Create Python virtual environment
         run: python -m venv .venv
 
-      - name: Verify Python (venv)
-        run: |
-          .venv/bin/python --version
+      - name: Add venv to PATH
         if: runner.os != 'Windows'
+        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
-      - name: Verify Python (venv, Windows)
+      - name: Add venv to PATH (Windows)
         if: runner.os == 'Windows'
-        run: .venv\Scripts\python --version
+        run: echo %GITHUB_WORKSPACE%\.venv\Scripts>> %GITHUB_PATH%
         shell: cmd
+
 
       - name: Install Pre-Requesists (venv)
         run: |
@@ -66,7 +66,7 @@ jobs:
       - name: Clone OpenUSD
         run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git usd/source
 
-      - name: Build OpenUSD (venv, Windows)
+      - name: Build OpenUSD (venv)
         if: runner.os != 'Windows'
         run: |
           .venv/bin/python ./usd/source/build_scripts/build_usd.py ./usd/install
