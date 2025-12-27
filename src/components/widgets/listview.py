@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QListView, QVBoxLayout, QHBoxLayout, QPushButton, QMenu, QApplication, QAbstractItemView
+from PySide6.QtWidgets import QWidget, QListView, QVBoxLayout, QHBoxLayout, QPushButton, QMenu, QApplication, QAbstractItemView, QMessageBox
 from PySide6.QtGui import QStandardItemModel, QStandardItem
 from PySide6.QtCore import Qt
 import os
@@ -122,7 +122,29 @@ class TaskListView(ListView):
             self._launch_app(path)
         elif action == delete_action:
             self._delete_asset(path)
-    
+        
+    def _delete_asset(self, path):
+        short_name = path.replace(self.context.project.path, self.context.project.name)
+        # Implement deletion logic with confirmation
+        reply = QMessageBox.question(
+            self, 
+            f"Delete",
+            f"Are you sure you want to delete {short_name}?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            try:
+                # Delete the folder and its contents
+                import shutil
+                shutil.rmtree(path)
+                self.refresh(self.context)
+                QMessageBox.information(self, "Deleted", f"{path.capitalize()} deleted successfully.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to delete: {str(e)}")
+                
+        self.refresh(self.context)
     
     def _launch_app(self, file=None):
         dialog = ApplicationLauncherDialog(self.context, file)
@@ -272,5 +294,24 @@ class AssetListView(ListView):
         pass
             
     def _delete_asset(self, path):
-        shutil.rmtree(path)
+        short_name = path.replace(self.context.project.path, self.context.project.name)
+        # Implement deletion logic with confirmation
+        reply = QMessageBox.question(
+            self, 
+            f"Delete",
+            f"Are you sure you want to delete {short_name}?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            try:
+                # Delete the folder and its contents
+                import shutil
+                shutil.rmtree(path)
+                self.refresh(self.context)
+                QMessageBox.information(self, "Deleted", f"{path.capitalize()} deleted successfully.")
+            except Exception as e:
+                QMessageBox.critical(self, "Error", f"Failed to delete: {str(e)}")
+                
         self.refresh(self.context)

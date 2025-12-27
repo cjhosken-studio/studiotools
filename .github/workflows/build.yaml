@@ -69,13 +69,13 @@ jobs:
       - name: Build OpenUSD (venv)
         if: runner.os != 'Windows'
         run: |
-          .venv/bin/python ./usd/source/build_scripts/build_usd.py studiotools/studiotools/usd/install
+          .venv/bin/python studiotools/studiotools/usd/source/build_scripts/build_usd.py studiotools/studiotools/usd/install
         shell: bash
         
       - name: Build OpenUSD (venv, Windows)
         if: runner.os == 'Windows'
         run: |
-          .venv\Scripts\python ./usd/source/build_scripts/build_usd.py studiotools/studiotools/usd/install
+          .venv\Scripts\python studiotools/studiotools/usd/source/build_scripts/build_usd.py studiotools/studiotools/usd/install
         shell: cmd
 
       # Linux + macOS
