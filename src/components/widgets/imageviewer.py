@@ -11,33 +11,15 @@ class ImageViewer(QWidget):
     def __init__(self):
         super().__init__()
         self.frames = []
+        self.current_frame = 0
         
         self.label = QLabel(alignment=Qt.AlignmentFlag.AlignCenter)
-        self.slider = QSlider(Qt.Orientation.Horizontal)
-        self.play_btn = QPushButton("Play")
-
-        self.timer = QTimer()
-        self.timer.setInterval(40)  # ~25 FPS
-
-        self.frames = []
-        self.current_frame = 0
-
-        self.slider.valueChanged.connect(self.set_frame)
-        self.play_btn.clicked.connect(self.toggle_play)
-        self.timer.timeout.connect(self.next_frame)
-
-        controls = QHBoxLayout()
-        controls.addWidget(self.play_btn)
-
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self.label)
-        layout.addWidget(self.slider)
-        layout.addLayout(controls)
 
-        self.slider.hide()
-        self.play_btn.hide()
-    
     def show_frame(self, index):
+        self.current_frame = index
         img = load_exr(self.frames[index])
         pix = QPixmap.fromImage(img)
         self.label.setPixmap(
@@ -48,33 +30,15 @@ class ImageViewer(QWidget):
             )
         )
 
-    def set_frame(self, index):
-        self.current_frame = index
-        self.show_frame(index)
+    def setTime(self, time_value: float):
+        """
+        time_value maps to an image index or frame number
+        """
+        frame = int(time_value)
+        self.show_frame(frame)
 
-    def next_frame(self):
-        self.current_frame = (self.current_frame + 1) % len(self.frames)
-        self.slider.setValue(self.current_frame)
-
-    def toggle_play(self):
-        if self.timer.isActive():
-            self.timer.stop()
-            self.play_btn.setText("Play")
-        else:
-            self.timer.start()
-            self.play_btn.setText("Pause")
-    
     def refresh(self, path):
         self.frames = detect_sequence(path)
-
-        self.slider.setMaximum(len(self.frames) - 1)
-        self.slider.setValue(0)
-        self.current_frame = 0
-
-        has_sequence = len(self.frames) > 1
-        self.slider.setVisible(has_sequence)
-        self.play_btn.setVisible(has_sequence)
-
         self.show_frame(0)
             
     def resizeEvent(self, event):

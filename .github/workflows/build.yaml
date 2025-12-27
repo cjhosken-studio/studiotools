@@ -64,18 +64,18 @@ jobs:
         run: mkdir usd
 
       - name: Clone OpenUSD
-        run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git usd/source
+        run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git studiotools/studiotools/usd/source
 
       - name: Build OpenUSD (venv)
         if: runner.os != 'Windows'
         run: |
-          .venv/bin/python ./usd/source/build_scripts/build_usd.py ./usd/install
+          .venv/bin/python ./usd/source/build_scripts/build_usd.py studiotools/studiotools/usd/install
         shell: bash
         
       - name: Build OpenUSD (venv, Windows)
         if: runner.os == 'Windows'
         run: |
-          .venv\Scripts\python ./usd/source/build_scripts/build_usd.py ./usd/install
+          .venv\Scripts\python ./usd/source/build_scripts/build_usd.py studiotools/studiotools/usd/install
         shell: cmd
 
       # Linux + macOS

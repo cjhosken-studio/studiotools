@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget, QListView, QVBoxLayout, QHBoxLayout, QPushButton, QMenu, QApplication
+from PySide6.QtWidgets import QWidget, QListView, QVBoxLayout, QHBoxLayout, QPushButton, QMenu, QApplication, QAbstractItemView
 from PySide6.QtGui import QStandardItemModel, QStandardItem
 from PySide6.QtCore import Qt
 import os
@@ -33,6 +33,7 @@ class ListView(QWidget):
         self.view.clicked.connect(self._on_item_clicked)
         self.view.setContextMenuPolicy(Qt.CustomContextMenu)
         self.view.customContextMenuRequested.connect(self._show_context_menu)
+        self.view.setEditTriggers(QAbstractItemView.NoEditTriggers)
         
     def _on_item_clicked(self, item):
         pass
