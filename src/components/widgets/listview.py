@@ -136,9 +136,7 @@ class TaskListView(ListView):
         
         if reply == QMessageBox.Yes:
             try:
-                # Delete the folder and its contents
-                import shutil
-                shutil.rmtree(path)
+                os.remove(path)
                 self.refresh(self.context)
                 QMessageBox.information(self, "Deleted", f"{path.capitalize()} deleted successfully.")
             except Exception as e:
