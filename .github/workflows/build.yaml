@@ -60,42 +60,20 @@ jobs:
         run: .venv\Scripts\python -m pip install -r ./requirements.txt
         shell: cmd
 
-      - name: Create USD directory (venv)
-        if: runner.os != 'Windows'
-        run: mkdir $GITHUB_WORKSPACE/usd
-
-      - name: Create USD directory (Windows)
-        if: runner.os == 'Windows'
-        run: mkdir %GITHUB_WORKSPACE%\usd
-
-      - name: Debug workspace (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          echo %CD%
-          dir usd
-          dir usd\source
-        shell: cmd
+      - name: Create USD directory
+        run: mkdir usd
 
       - name: Clone OpenUSD (venv)
         if: runner.os != 'Windows'
-        run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git $GITHUB_WORKSPACE/usd/source
+        run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git ./usd/source
 
       - name: Clone OpenUSD (Windows)
         if: runner.os == 'Windows'
-        run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git %GITHUB_WORKSPACE%\usd\source
+        run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git .\usd\source
       
-      - name: Build OpenUSD (venv)
-        if: runner.os != 'Windows'
-        run: |
-          .venv/bin/python $GITHUB_WORKSPACE/usd/source/build_scripts/build_usd.py $GITHUB_WORKSPACE/usd/install
-        shell: bash
-        
-      - name: Build OpenUSD (venv, Windows)
-        if: runner.os == 'Windows'
-        run: |
-          .venv\Scripts\python %GITHUB_WORKSPACE%\usd\source\build_scripts\build_usd.py %GITHUB_WORKSPACE%\usd\install
-        shell: cmd
-
+      - name: Build OpenUSD
+        run: .venv/bin/python ./usd/source/build_scripts/build_usd.py ./usd/install
+    
       # Linux + macOS
       - name: Run launch script (Unix)
         if: runner.os != 'Windows'
