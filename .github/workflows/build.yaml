@@ -68,6 +68,14 @@ jobs:
         if: runner.os == 'Windows'
         run: mkdir %GITHUB_WORKSPACE%\usd
 
+      - name: Debug workspace (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          echo %CD%
+          dir usd
+          dir usd\source
+        shell: cmd
+
       - name: Clone OpenUSD (venv)
         if: runner.os != 'Windows'
         run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git $GITHUB_WORKSPACE/usd/source
