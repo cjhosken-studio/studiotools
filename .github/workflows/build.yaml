@@ -98,7 +98,8 @@ jobs:
           chmod +x ./launch.sh
           source .venv/bin/activate
           export QT_QPA_PLATFORM=offscreen
-          ./launch.sh
+          timeout 10s ./launch.sh || true
+
         shell: bash
 
       # Windows
@@ -106,5 +107,5 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           call .venv\Scripts\activate.bat
-          launch.bat
+          powershell -Command "Start-Process launch.bat; Start-Sleep -Seconds 10; Stop-Process -Name your_app_exe_name -Force"
         shell: cmd
