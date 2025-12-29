@@ -107,5 +107,5 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           call .venv\Scripts\activate.bat
-          powershell -Command "Start-Process launch.bat; Start-Sleep -Seconds 10; Stop-Process -Name your_app_exe_name -Force"
+          powershell -Command "Start-Process launch.bat; Start-Sleep -Seconds 10; Stop-Process -Name .\launch.bat -Force"
         shell: cmd
