@@ -106,8 +106,8 @@ jobs:
       - name: Run launch script (Windows)
         if: runner.os == 'Windows'
         run: |
-          call .venv\Scripts\activate.bat
-          call .venv\Scripts\activate.bat
-          timeout /t 10
-          call launch.bat
+          .\.venv\Scripts\Activate.ps1
+          $env:QT_QPA_PLATFORM = "offscreen"
+          Start-Sleep -Seconds 10
+          cmd /c launch.bat
         shell: cmd
