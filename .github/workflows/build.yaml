@@ -31,7 +31,18 @@ jobs:
             mesa-common-dev \
             libglu1-mesa-dev \
             libglvnd-dev \
-            libxcb-cursor-dev
+            libxcb-cursor0 \
+            libxcb-xinerama0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-sync1 \
+            libxcb-xfixes0 \
+            libxcb-xkb1 \
+            libxkbcommon-x11-0
 
       - name: Setup Python 3.13
         uses: actions/setup-python@v5
