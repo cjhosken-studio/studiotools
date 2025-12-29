@@ -97,6 +97,7 @@ jobs:
         run: |
           chmod +x ./launch.sh
           source .venv/bin/activate
+          export QT_QPA_PLATFORM=offscreen
           ./launch.sh
         shell: bash
 
