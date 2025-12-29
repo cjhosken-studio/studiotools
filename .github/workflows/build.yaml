@@ -73,11 +73,11 @@ jobs:
       
       - name: Build OpenUSD (venv)
         if: runner.os != 'Windows'
-        run: .venv/bin/python ./usd/source/build_scripts/build_usd.py ./usd/install
+        run: .venv/bin/python ./usd/source/build_scripts/build_usd.py ./usd/install/
     
       - name: Build OpenUSD (Windows)
         if: runner.os == 'Windows'
-        run: .venv\Scripts\python .\usd\source\build_scripts\build_usd.py .\usd\install
+        run: .venv\Scripts\python .\usd\source\build_scripts\build_usd.py .\usd\install\
 
       # Linux + macOS
       - name: Run launch script (Unix)
