@@ -10,14 +10,13 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [ubuntu-latest]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install X11 dependencies (Linux)
-        if: runner.os == 'Linux'
+      - name: Install X11 dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -53,61 +52,25 @@ jobs:
         run: python -m venv .venv
 
       - name: Add venv to PATH
-        if: runner.os != 'Windows'
         run: echo "$GITHUB_WORKSPACE/.venv/bin" >> $GITHUB_PATH
 
-      - name: Add venv to PATH (Windows)
-        if: runner.os == 'Windows'
-        run: echo %GITHUB_WORKSPACE%\.venv\Scripts>> %GITHUB_PATH%
-        shell: cmd
-
-
       - name: Install Pre-Requesists (venv)
-        run: |
-          .venv/bin/python -m pip install -r ./requirements.txt
-        if: runner.os != 'Windows'
-
-      - name: Install Pre-Requesists (venv, Windows)
-        if: runner.os == 'Windows'
-        run: .venv\Scripts\python -m pip install -r ./requirements.txt
-        shell: cmd
+        run: .venv/bin/python -m pip install -r ./requirements.txt
 
       - name: Create USD directory
         run: mkdir usd
 
       - name: Clone OpenUSD (venv)
-        if: runner.os != 'Windows'
         run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git ./usd/source
-
-      - name: Clone OpenUSD (Windows)
-        if: runner.os == 'Windows'
-        run: git clone https://github.com/PixarAnimationStudios/OpenUSD.git .\usd\source
       
       - name: Build OpenUSD (venv)
-        if: runner.os != 'Windows'
         run: .venv/bin/python ./usd/source/build_scripts/build_usd.py ./usd/install/
-    
-      - name: Build OpenUSD (Windows)
-        if: runner.os == 'Windows'
-        run: .venv\Scripts\python .\usd\source\build_scripts\build_usd.py .\usd\install\
 
       # Linux + macOS
       - name: Run launch script (Unix)
-        if: runner.os != 'Windows'
         run: |
           chmod +x ./launch.sh
           source .venv/bin/activate
           export QT_QPA_PLATFORM=offscreen
           timeout 10s ./launch.sh || true
-
         shell: bash
-
-      # Windows
-      - name: Run launch script (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          .\.venv\Scripts\Activate.ps1
-          $env:QT_QPA_PLATFORM = "offscreen"
-          Start-Sleep -Seconds 10
-          cmd /c launch.bat
-        shell: cmd
