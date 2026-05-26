@@ -1,0 +1,9 @@
+type: "usd_publish"
+application: "blender"
+source_file: "scene_v001.blend"
+date: "2026-05-26 10:41:03"
+user: "cjhosken"
+exported_root_objects:
+  - "Cube"
+  - "Light"
+  - "Camera"

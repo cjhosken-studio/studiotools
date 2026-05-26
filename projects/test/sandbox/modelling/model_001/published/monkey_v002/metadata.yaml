@@ -1,0 +1,10 @@
+type: "usd_publish"
+application: "blender"
+application_version: "5.1.2"
+source_file: "scene_v004.blend"
+date: "2026-05-26 11:13:04"
+user: "cjhosken"
+exported_root_objects:
+  - "Suzanne"
+  - "Suzanne.001"
+  - "Suzanne.002"

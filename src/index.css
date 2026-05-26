@@ -1,0 +1,436 @@
+/* Premium Dark UI Styling for Studiotools VFX USD Pipeline */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Fira Code', monospace;
+
+  /* Theme Colors (VFX inspired HSL Slate & Charcoal Palette) */
+  --bg-app: hsl(220, 20%, 5%);
+  --bg-panel: hsl(220, 16%, 8%);
+  --bg-panel-hover: hsl(220, 14%, 12%);
+  --bg-card: hsl(220, 12%, 11%);
+  --bg-active: hsl(220, 15%, 15%);
+  
+  --border: hsl(220, 10%, 15%);
+  --border-light: hsl(220, 10%, 20%);
+  --border-active: hsl(200, 95%, 45%);
+
+  --text-primary: hsl(220, 15%, 90%);
+  --text-secondary: hsl(220, 10%, 65%);
+  --text-muted: hsl(220, 10%, 45%);
+
+  /* Accent Glows (VFX app branding) */
+  --color-usd: hsl(195, 100%, 50%);
+  --color-usd-glow: hsla(195, 100%, 50%, 0.15);
+
+  --color-blender: hsl(30, 95%, 55%);
+  --color-blender-glow: hsla(30, 95%, 55%, 0.15);
+
+  --color-houdini: hsl(15, 95%, 55%);
+  --color-houdini-glow: hsla(15, 95%, 55%, 0.15);
+
+  --color-nuke: hsl(330, 90%, 50%);
+  --color-nuke-glow: hsla(330, 90%, 50%, 0.15);
+
+  --color-success: hsl(145, 80%, 45%);
+  --color-warning: hsl(45, 95%, 50%);
+  --color-danger: hsl(355, 85%, 55%);
+
+  /* Micro transitions */
+  --transition-fast: 120ms ease;
+  --transition-normal: 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-app);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Glassmorphism Panel styles */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 4px 20px hsla(0, 0%, 0%, 0.3);
+}
+
+.panel-header {
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: hsla(220, 16%, 6%, 0.5);
+  backdrop-filter: blur(10px);
+}
+
+.panel-header h2 {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+/* VFX Layout Structure */
+.app-container {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr 340px;
+  gap: 8px;
+  padding: 8px;
+  height: calc(100vh - 56px); /* subtract header */
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+.header {
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.logo-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  background: var(--bg-active);
+  border: 1px solid var(--border-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--color-usd);
+}
+
+/* Modals & Forms */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 180ms ease;
+}
+
+.modal-content {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  width: 440px;
+  max-width: 90vw;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: slideUp 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.form-input, .form-select {
+  background: var(--bg-app);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.form-input:focus, .form-select:focus {
+  border-color: var(--border-active);
+  box-shadow: 0 0 0 2px hsla(200, 95%, 45%, 0.15);
+}
+
+/* Interactive elements */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn:hover {
+  background: var(--bg-panel-hover);
+  border-color: var(--text-muted);
+}
+
+.btn-primary {
+  background: var(--border-active);
+  border-color: var(--border-active);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: hsl(200, 95%, 40%);
+  border-color: hsl(200, 95%, 40%);
+  box-shadow: 0 0 10px hsla(200, 95%, 45%, 0.3);
+}
+
+.btn-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: hsl(355, 85%, 45%);
+}
+
+.btn-text {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+}
+
+.btn-text:hover {
+  color: var(--text-primary);
+  background: var(--bg-active);
+}
+
+/* Project Tree Elements */
+.tree-node {
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.tree-node:hover {
+  background: var(--bg-panel-hover);
+  color: var(--text-primary);
+}
+
+.tree-node.active {
+  background: var(--bg-active);
+  color: var(--text-primary);
+  border-left: 3px solid var(--border-active);
+}
+
+/* Grid of applications */
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+.app-card {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.app-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: var(--bg-active);
+  transition: background var(--transition-normal);
+}
+
+/* Blender styling card */
+.app-card.app-blender::before {
+  background: var(--color-blender);
+}
+.app-card.app-blender:hover {
+  border-color: var(--color-blender);
+  box-shadow: 0 4px 15px var(--color-blender-glow);
+}
+
+/* Houdini styling card */
+.app-card.app-houdini::before {
+  background: var(--color-houdini);
+}
+.app-card.app-houdini:hover {
+  border-color: var(--color-houdini);
+  box-shadow: 0 4px 15px var(--color-houdini-glow);
+}
+
+/* Nuke styling card */
+.app-card.app-nuke::before {
+  background: var(--color-nuke);
+}
+.app-card.app-nuke:hover {
+  border-color: var(--color-nuke);
+  box-shadow: 0 4px 15px var(--color-nuke-glow);
+}
+
+/* USD Inspector card */
+.app-card.app-usd_web::before {
+  background: var(--color-usd);
+}
+.app-card.app-usd_web:hover {
+  border-color: var(--color-usd);
+  box-shadow: 0 4px 15px var(--color-usd-glow);
+}
+
+.app-card-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.app-card-status {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(200, 95, 45, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(200, 95, 45, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(200, 95, 45, 0); }
+}
+
+.launching-pulse {
+  animation: pulse-glow 1.5s infinite;
+}
+
+/* USD Node tree styles */
+.usd-tree-node {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-fast);
+}
+
+.usd-tree-node:hover {
+  background: var(--bg-active);
+}
+
+.usd-tree-node.selected {
+  background: var(--color-usd-glow);
+  border-left: 2px solid var(--color-usd);
+  color: #fff;
+}
+
+/* Published USD Showcase Cards */
+.showcase-card:hover {
+  border-color: var(--color-usd) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 240, 255, 0.15) !important;
+}
+
+.showcase-card:hover .showcase-image {
+  transform: scale(1.04);
+}

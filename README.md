@@ -1,43 +1,73 @@
-<p align="center">
-  <img src="./public/icons/usd.png" alt="Deadshot Logo" width="200"/>
-</p>
+# React + TypeScript + Vite
 
-<h1 align="center"> StudioTools </h1>
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
-<div align="center">
+Currently, two official plugins are available:
 
-  <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff"/>
-  <img src="https://img.shields.io/badge/Qt-2CDE85?logo=Qt&logoColor=fffB"/>
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-  <br/>
+## React Compiler
 
-  <a href="https://github.com/cjhosken-studio/studiotools/actions/workflows/build.yaml">
-    <img src="https://github.com/cjhosken-studio/studiotools/actions/workflows/build.yaml/badge.svg?branch=main" alt="App Build"/>
-  </a>
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-</div>
+## Expanding the ESLint configuration
 
----
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-**Studiotools** is an open-source **USD** based pipeline tool for **VFX and CG Productions**.  
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
----
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-## Building
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
 
-You will need to build OpenUSD and install it into usd/install. Specifically, the usdview and python modules are needed.
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-## Requirements
-Blender 5.0+
-Houdini 21.0+
-Nuke 17.0+
-
-## 📬 Contact & Info
-
-This repository is maintained by **Christopher Hosken**.
-
-- 📧 Email: [hoskenchristopher@gmail.com](mailto:hoskenchristopher@gmail.com)  
-- 🔗 LinkedIn: [christopher-hosken](https://www.linkedin.com/in/christopher-hosken/)  
-
----
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
