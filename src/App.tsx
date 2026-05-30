@@ -22,22 +22,24 @@ interface Project {
   path: string;
 }
 
+interface ProjectFile {
+  name: string;
+  relativePath: string;
+  absolutePath: string;
+  category: string;
+  ext: string;
+  thumbnailPath?: string;
+  appVersion?: string;
+  application?: string;
+}
+
 interface TreeNode {
   name: string;
   path: string;
   type: string;
   subtype: string;
   children: TreeNode[];
-  files: Array<{
-    name: string;
-    relativePath: string;
-    absolutePath: string;
-    category: string;
-    ext: string;
-    thumbnailPath?: string;
-    appVersion?: string;
-    application?: string;
-  }>;
+  files: ProjectFile[];
 }
 
 interface Application {
@@ -79,13 +81,17 @@ export default function App() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; node: TreeNode } | null>(null);
+  const [assetContextMenu, setAssetContextMenu] = useState<{ x: number; y: number; file: ProjectFile } | null>(null);
 
   useEffect(() => {
     fetchProjects();
   }, []);
 
   useEffect(() => {
-    const handleCloseMenu = () => setContextMenu(null);
+    const handleCloseMenu = () => {
+      setContextMenu(null);
+      setAssetContextMenu(null);
+    };
     window.addEventListener('click', handleCloseMenu);
     return () => window.removeEventListener('click', handleCloseMenu);
   }, []);
@@ -100,6 +106,16 @@ export default function App() {
     });
   };
 
+  const handleAssetContextMenu = (file: ProjectFile, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setAssetContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      file: file
+    });
+  };
+
   useEffect(() => {
     if (activeProject) {
       fetchProjectTree(activeProject.path);
@@ -111,6 +127,17 @@ export default function App() {
       setApplications([]);
     }
   }, [activeProject]);
+
+  useEffect(() => {
+    if (!activeProject) return;
+    
+    // Background polling: silently refresh the project tree every 3 seconds to auto-refresh
+    const interval = setInterval(() => {
+      fetchProjectTree(activeProject.path, true);
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [activeProject, selectedNode]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -130,8 +157,8 @@ export default function App() {
     }
   };
 
-  const fetchProjectTree = async (path: string) => {
-    setLoading(true);
+  const fetchProjectTree = async (path: string, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const response = await fetch(`/api/project-tree?path=${encodeURIComponent(path)}`);
       if (response.ok) {
@@ -157,9 +184,9 @@ export default function App() {
         }
       }
     } catch (err) {
-      showToast('Failed to load project structure', 'error');
+      if (!silent) showToast('Failed to load project structure', 'error');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -289,7 +316,7 @@ export default function App() {
       const data = await response.json();
       if (response.ok) {
         showToast(data.message || `${app.name} launched successfully!`);
-        if (activeProject) fetchProjectTree(activeProject.path);
+        if (activeProject) fetchProjectTree(activeProject.path, true);
       } else {
         showToast(data.detail || `Failed to launch ${app.name}`, 'error');
       }
@@ -297,6 +324,80 @@ export default function App() {
       showToast('Error sending launch command to server', 'error');
     } finally {
       setTimeout(() => setLaunchingApp(null), 2500);
+    }
+  };
+
+  const handleOpenWorkfile = async (file: ProjectFile) => {
+    if (!selectedNode || selectedNode.type !== 'task') return;
+    
+    // Determine appType based on file extension
+    let appType = '';
+    if (file.ext === 'blend') appType = 'blender';
+    else if (file.ext === 'hip' || file.ext === 'hipnc' || file.ext === 'hiplc') appType = 'houdini';
+    else if (file.ext === 'nk') appType = 'nuke';
+    
+    if (!appType) {
+      showToast(`Unsupported file type to open: .${file.ext}`, 'error');
+      return;
+    }
+    
+    // Find the installed application config
+    const app = applications.find(a => a.appType === appType);
+    if (!app) {
+      showToast(`No software configured/found to open .${file.ext} files`, 'error');
+      return;
+    }
+    
+    if (!app.installed) {
+      showToast(`${app.name} is not installed or configured on this machine`, 'error');
+      return;
+    }
+    
+    setLaunchingApp(app.name);
+    try {
+      const response = await fetch('/api/launch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appName: app.name,
+          appType: app.appType,
+          executable: app.executable,
+          taskPath: selectedNode.path,
+          preload: file.absolutePath
+        })
+      });
+      
+      const data = await response.json();
+      if (response.ok) {
+        showToast(data.message || `Opened ${file.name} in ${app.name}!`);
+        if (activeProject) fetchProjectTree(activeProject.path, true);
+      } else {
+        showToast(data.detail || `Failed to open ${file.name}`, 'error');
+      }
+    } catch (err) {
+      showToast('Error sending open command to server', 'error');
+    } finally {
+      setTimeout(() => setLaunchingApp(null), 2500);
+    }
+  };
+
+  const handleRegenerateThumbnail = async (file: ProjectFile) => {
+    try {
+      const response = await fetch('/api/usd/thumbnail/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usdPath: file.absolutePath })
+      });
+      
+      if (response.ok) {
+        showToast(`Regenerated thumbnail for ${file.name}!`);
+        if (activeProject) fetchProjectTree(activeProject.path, true);
+      } else {
+        const err = await response.json();
+        showToast(err.detail || 'Failed to regenerate thumbnail', 'error');
+      }
+    } catch (err) {
+      showToast('Error communicating with server', 'error');
     }
   };
 
@@ -606,6 +707,40 @@ export default function App() {
                                         </span>
                                       </div>
                                     </div>
+                                    
+                                    {/* Action button to open specific workfile in DCC */}
+                                    {(() => {
+                                      let appType = '';
+                                      if (file.ext === 'blend') appType = 'blender';
+                                      else if (file.ext === 'hip' || file.ext === 'hipnc' || file.ext === 'hiplc') appType = 'houdini';
+                                      else if (file.ext === 'nk') appType = 'nuke';
+                                      
+                                      const app = applications.find(a => a.appType === appType);
+                                      const isInstalled = app ? app.installed : false;
+                                      
+                                      if (!app || !isInstalled) return null;
+                                      
+                                      return (
+                                        <button 
+                                          className="btn"
+                                          onClick={() => handleOpenWorkfile(file)}
+                                          style={{ 
+                                            padding: '4px 10px', 
+                                            fontSize: '11px',
+                                            height: '24px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            background: 'rgba(255, 255, 255, 0.05)',
+                                            border: '1px solid var(--border-light)',
+                                            color: 'var(--text-secondary)',
+                                            fontWeight: 500
+                                          }}
+                                          title={`Open ${file.name} directly in ${app.name}`}
+                                        >
+                                          Open Scene
+                                        </button>
+                                      );
+                                    })()}
                                   </div>
                                 ))}
                               </div>
@@ -690,6 +825,7 @@ export default function App() {
                                       <div 
                                         key={assetKey}
                                         className="showcase-card"
+                                        onContextMenu={(e) => handleAssetContextMenu(currentFile, e)}
                                         style={{ 
                                           display: 'flex', 
                                           flexDirection: 'column',
@@ -699,7 +835,8 @@ export default function App() {
                                           overflow: 'hidden',
                                           transition: 'all 200ms ease',
                                           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
-                                          position: 'relative'
+                                          position: 'relative',
+                                          cursor: 'context-menu'
                                         }}
                                       >
                                         {/* Visual Image Banner */}
@@ -816,38 +953,42 @@ export default function App() {
                                               </button>
                                               
                                               <div style={{ display: 'flex', gap: '6px' }}>
-                                                <button 
-                                                  className="btn"
-                                                  onClick={() => handleLoadInDCC('blender', currentFile.absolutePath)}
-                                                  style={{ 
-                                                    flex: 1,
-                                                    padding: '5px', 
-                                                    fontSize: '11px',
-                                                    background: 'rgba(234, 137, 36, 0.15)',
-                                                    border: '1px solid rgba(234, 137, 36, 0.4)',
-                                                    color: 'var(--color-blender)',
-                                                    fontWeight: 500
-                                                  }}
-                                                  title="Load USD directly in Blender viewport"
-                                                >
-                                                  → Blender
-                                                </button>
-                                                <button 
-                                                  className="btn"
-                                                  onClick={() => handleLoadInDCC('houdini', currentFile.absolutePath)}
-                                                  style={{ 
-                                                    flex: 1,
-                                                    padding: '5px', 
-                                                    fontSize: '11px',
-                                                    background: 'rgba(236, 90, 60, 0.15)',
-                                                    border: '1px solid rgba(236, 90, 60, 0.4)',
-                                                    color: 'var(--color-houdini)',
-                                                    fontWeight: 500
-                                                  }}
-                                                  title="Load USD directly in Houdini stage network"
-                                                >
-                                                  → Houdini
-                                                </button>
+                                                {currentFile.application === 'blender' && (
+                                                  <button 
+                                                    className="btn"
+                                                    onClick={() => handleLoadInDCC('blender', currentFile.absolutePath)}
+                                                    style={{ 
+                                                      flex: 1,
+                                                      padding: '5px', 
+                                                      fontSize: '11px',
+                                                      background: 'rgba(234, 137, 36, 0.15)',
+                                                      border: '1px solid rgba(234, 137, 36, 0.4)',
+                                                      color: 'var(--color-blender)',
+                                                      fontWeight: 500
+                                                    }}
+                                                    title="Load USD directly in Blender viewport"
+                                                  >
+                                                    → Blender
+                                                  </button>
+                                                )}
+                                                {currentFile.application === 'houdini' && (
+                                                  <button 
+                                                    className="btn"
+                                                    onClick={() => handleLoadInDCC('houdini', currentFile.absolutePath)}
+                                                    style={{ 
+                                                      flex: 1,
+                                                      padding: '5px', 
+                                                      fontSize: '11px',
+                                                      background: 'rgba(236, 90, 60, 0.15)',
+                                                      border: '1px solid rgba(236, 90, 60, 0.4)',
+                                                      color: 'var(--color-houdini)',
+                                                      fontWeight: 500
+                                                    }}
+                                                    title="Load USD directly in Houdini stage network"
+                                                  >
+                                                    → Houdini
+                                                  </button>
+                                                )}
                                               </div>
                                             </div>
                                           )}
@@ -978,9 +1119,9 @@ export default function App() {
                   value={newProjectName}
                   onChange={e => {
                     setNewProjectName(e.target.value);
-                    if (!newProjectPath) {
+                    if (!newProjectPath || newProjectPath.startsWith('/home/cjhosken/dev/studiotools/projects/') || newProjectPath.startsWith('/server/cjhosken_life/projects/')) {
                       // Autocomplete path
-                      setNewProjectPath(`/home/cjhosken/dev/studiotools/projects/${e.target.value.toLowerCase().replace(/\s+/g, '_')}`);
+                      setNewProjectPath(`/server/cjhosken_life/projects/${e.target.value.toLowerCase().replace(/\s+/g, '_')}`);
                     }
                   }}
                 />
@@ -1162,6 +1303,36 @@ export default function App() {
             }}
           >
             Select Item
+          </button>
+        </div>
+      )}
+
+      {/* ASSET CONTEXT MENU */}
+      {assetContextMenu && (
+        <div style={{
+          position: 'fixed',
+          top: assetContextMenu.y,
+          left: assetContextMenu.x,
+          zIndex: 1000,
+          background: 'var(--bg-panel)',
+          border: '1px solid var(--border-light)',
+          borderRadius: '6px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+          padding: '4px 0',
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: '180px',
+          animation: 'fadeIn 100ms ease'
+        }}>
+          <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontStyle: 'italic', fontWeight: 600 }}>
+            Asset: {assetContextMenu.file.name}
+          </div>
+          <button 
+            className="btn btn-text" 
+            style={{ justifyContent: 'flex-start', padding: '8px 14px', fontSize: '12px', width: '100%', gap: '8px', borderRadius: 0 }}
+            onClick={() => handleRegenerateThumbnail(assetContextMenu.file)}
+          >
+            <Sparkles size={13} style={{ color: 'var(--color-usd)' }} /> Force Regenerate Preview
           </button>
         </div>
       )}

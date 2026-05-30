@@ -388,20 +388,25 @@ def launch_application(req: LaunchRequest):
 
     if not os.path.exists(req.executable):
         raise HTTPException(status_code=404, detail=f"Executable not found at: {req.executable}")
-
     try:
-        # Determine latest task version
-        version = get_latest_task_version(req.taskPath)
-        ext = "blend" if req.appType == "blender" else ("hip" if req.appType == "houdini" else "nk")
-        
-        file_name = f"scene_v{version:03d}.{ext}"
-        
-        # Prepare wip directory structure
-        wip_dir = os.path.join(req.taskPath, "wip")
-        app_dir = os.path.join(wip_dir, req.appType)
-        os.makedirs(app_dir, exist_ok=True)
-        
-        launch_file = os.path.join(app_dir, file_name)
+        if req.preload:
+            launch_file = os.path.abspath(req.preload)
+            # Ensure the preload file exists
+            if not os.path.exists(launch_file):
+                raise HTTPException(status_code=404, detail=f"Preload file not found: {req.preload}")
+        else:
+            # Determine latest task version
+            version = get_latest_task_version(req.taskPath)
+            ext = "blend" if req.appType == "blender" else ("hip" if req.appType == "houdini" else "nk")
+            
+            file_name = f"scene_v{version:03d}.{ext}"
+            
+            # Prepare wip directory structure
+            wip_dir = os.path.join(req.taskPath, "wip")
+            app_dir = os.path.join(wip_dir, req.appType)
+            os.makedirs(app_dir, exist_ok=True)
+            
+            launch_file = os.path.join(app_dir, file_name)
         
 
                 
@@ -492,6 +497,61 @@ def get_usd_thumbnail(path: str):
         raise HTTPException(status_code=404, detail="Thumbnail file not found")
     from fastapi.responses import FileResponse
     return FileResponse(path, media_type="image/png")
+
+class ThumbnailRegenerateRequest(BaseModel):
+    usdPath: str
+
+@app.post("/api/usd/thumbnail/regenerate")
+def post_usd_thumbnail_regenerate(req: ThumbnailRegenerateRequest):
+    """Deletes existing thumbnail and forces regeneration of high-res beauty preview thumbnail."""
+    import re
+    usd_file = os.path.abspath(req.usdPath)
+    if not os.path.exists(usd_file):
+        raise HTTPException(status_code=404, detail="USD file not found")
+        
+    root = os.path.dirname(usd_file)
+    f = os.path.basename(usd_file)
+    
+    thumb_path = os.path.join(root, "thumbnail.png")
+    
+    # Clean up existing thumbnail first if it exists
+    if os.path.exists(thumb_path):
+        try:
+            os.remove(thumb_path)
+        except Exception as e:
+            print(f"Failed to delete old thumbnail: {e}")
+            
+    # Resolve metadata details just like in project tree scan
+    app = "blender"
+    shape = "mesh"
+    meta_path = os.path.join(root, "metadata.yaml")
+    if os.path.exists(meta_path):
+        try:
+            with open(meta_path, "r", encoding="utf-8") as mf:
+                meta = yaml.safe_load(mf) or {}
+                app = meta.get("application", "blender")
+                objs = meta.get("exported_root_objects", [])
+                if objs:
+                    obj0 = str(objs[0]).lower()
+                    if "sphere" in obj0:
+                        shape = "sphere"
+                    elif "cube" in obj0:
+                        shape = "cube"
+                    elif "cylinder" in obj0:
+                        shape = "cylinder"
+                    elif "cone" in obj0:
+                        shape = "cone"
+        except Exception:
+            pass
+            
+    try:
+        # Use base asset name from filename for clean HUD display
+        asset_display = os.path.splitext(f)[0]
+        clean_asset_display = re.sub(r"_v\d+$", "", asset_display)
+        generate_usd_thumbnail(thumb_path, shape=shape, asset_name=clean_asset_display, app_name=app)
+        return {"status": "success", "message": "Thumbnail regenerated successfully!", "thumbnailPath": thumb_path}
+    except Exception as te:
+        raise HTTPException(status_code=500, detail=f"Failed to generate thumbnail: {str(te)}")
 
 @app.post("/api/usd/create")
 def post_usd_create(path: str):
