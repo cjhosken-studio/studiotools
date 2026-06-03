@@ -53,6 +53,7 @@ class LaunchRequest(BaseModel):
     taskPath: str
     preload: Optional[str] = None
     startupScript: Optional[str] = None
+    preloadUSD: Optional[str] = None
 
 class ProjectArchiveRequest(BaseModel):
     path: str
@@ -75,6 +76,11 @@ class ApplicationModel(BaseModel):
 class ProjectApplicationsUpdate(BaseModel):
     projectPath: str
     applications: List[ApplicationModel]
+
+class PublishVersionRequest(BaseModel):
+    taskPath: str
+    assetName: str
+    versionFolder: str
 
 class ToggleDisabledRequest(BaseModel):
     path: str
@@ -233,7 +239,7 @@ def get_project_tree(path: str):
             for sub in ["wip", "versions", "published"]:
                 sub_dir = os.path.join(current_path, sub)
                 if os.path.exists(sub_dir):
-                    for root, _, filenames in os.walk(sub_dir):
+                    for root, _, filenames in os.walk(sub_dir, followlinks=True):
                         for f in filenames:
                             # Skip pipeline metadata cards and Blender backup files from being shown in workspace lists
                             import re
@@ -251,8 +257,8 @@ def get_project_tree(path: str):
                                 "ext": ext
                             }
                             
-                            # Automatically generate thumbnail on-the-fly for published USD deliverables
-                            if sub == "published" and ext in ["usd", "usda", "usdc"]:
+                            # Automatically generate thumbnail on-the-fly for published/versioned USD deliverables
+                            if sub in ["published", "versions"] and ext in ["usd", "usda", "usdc"]:
                                 app = "blender"
                                 app_version = ""
                                 shape = "mesh"
@@ -667,6 +673,16 @@ def launch_application(req: LaunchRequest):
         env["ST_CWD"] = req.taskPath
         env["STUDIOTOOLS"] = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
+        env["ST_APP_NAME"] = req.appType
+        app_version = ""
+        version_match = re.search(r"\d+\.\d+v\d+|\d+\.\d+(?:\.\d+)?", req.appName)
+        if version_match:
+            app_version = version_match.group(0)
+        env["ST_APP_VERSION"] = app_version
+
+        if req.preloadUSD:
+            env["ST_PRELOAD_USD"] = req.preloadUSD
+
         if req.startupScript:
             env["ST_STARTUP_SCRIPT"] = req.startupScript
 
@@ -806,6 +822,37 @@ def post_usd_create(path: str):
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
+@app.post("/api/usd/publish-version")
+def publish_version(req: PublishVersionRequest):
+    """Sets a specific version folder as the symlinked 'published' version."""
+    task_path = os.path.abspath(req.taskPath)
+    published_dir = os.path.join(task_path, "published")
+    versions_dir = os.path.join(task_path, "versions")
+    
+    os.makedirs(published_dir, exist_ok=True)
+    
+    target_link = os.path.join(published_dir, req.assetName)
+    target_dir = os.path.join(versions_dir, req.versionFolder)
+    
+    if not os.path.isdir(target_dir):
+        raise HTTPException(status_code=404, detail=f"Version folder not found: {req.versionFolder}")
+        
+    try:
+        # Remove existing symlink or file/directory
+        if os.path.islink(target_link) or os.path.exists(target_link):
+            if os.path.isdir(target_link) and not os.path.islink(target_link):
+                import shutil
+                shutil.rmtree(target_link)
+            else:
+                os.remove(target_link)
+                
+        # Create relative symlink to versions/
+        src = os.path.join("..", "versions", req.versionFolder)
+        os.symlink(src, target_link)
+        return {"status": "success", "message": f"Successfully set version {req.versionFolder} as published."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create symlink: {str(e)}")
+
 @app.delete("/api/items")
 def delete_item(path: str):
     """Safely and recursively deletes a directory inside a registered project context."""
@@ -932,6 +979,7 @@ def delete_project(req: ProjectDeleteRequest):
 
 # --- Session command queues for active DCC sessions ---
 SESSION_COMMANDS = {}
+SESSION_POLL_TIMES = {}
 
 class SessionCommand(BaseModel):
     appType: str
@@ -939,22 +987,74 @@ class SessionCommand(BaseModel):
     command: str
     argument: str
 
+def get_configured_application(task_path: str, app_type: str) -> Optional[dict]:
+    # Walk up to find project.yaml
+    current = task_path
+    project_path = None
+    while current and current != os.path.dirname(current):
+        if os.path.isfile(os.path.join(current, "project.yaml")):
+            project_path = current
+            break
+        current = os.path.dirname(current)
+        
+    if not project_path:
+        projects = load_projects_list()
+        for p in projects:
+            p_path = os.path.abspath(p["path"])
+            if task_path.startswith(p_path):
+                project_path = p_path
+                break
+                
+    if project_path:
+        apps = get_applications(project_path)
+    else:
+        apps = scan_system_applications()
+        
+    for app in apps:
+        if app.get("appType") == app_type:
+            return app
+    return None
+
 @app.post("/api/sessions/command")
 def queue_session_command(cmd: SessionCommand):
-    """Queues a command for a running DCC session."""
+    """Queues a command for a running DCC session, or launches the DCC if not active."""
     key = f"{cmd.appType}:{cmd.taskPath}"
-    if key not in SESSION_COMMANDS:
-        SESSION_COMMANDS[key] = []
-    SESSION_COMMANDS[key].append({
-        "command": cmd.command,
-        "argument": cmd.argument
-    })
-    return {"status": "success", "message": "Command queued successfully!"}
+    
+    import time
+    last_poll = SESSION_POLL_TIMES.get(key, 0)
+    
+    if time.time() - last_poll < 3.0:
+        # Session is active! Just queue the command
+        if key not in SESSION_COMMANDS:
+            SESSION_COMMANDS[key] = []
+        SESSION_COMMANDS[key].append({
+            "command": cmd.command,
+            "argument": cmd.argument
+        })
+        return {"status": "success", "message": "Command queued successfully for active session!"}
+    else:
+        # Session is not active, launch the DCC with USD preloaded
+        app_config = get_configured_application(cmd.taskPath, cmd.appType)
+        if not app_config:
+            raise HTTPException(status_code=404, detail=f"No application configuration found for {cmd.appType}")
+            
+        req = LaunchRequest(
+            appName=app_config["name"],
+            appType=cmd.appType,
+            executable=app_config["executable"],
+            taskPath=cmd.taskPath,
+            preload=None,
+            startupScript=app_config.get("startupScript"),
+            preloadUSD=cmd.argument if cmd.command == "load_usd" else None
+        )
+        return launch_application(req)
 
 @app.get("/api/sessions/poll")
 def poll_session_commands(appType: str, taskPath: str):
     """DCC calls this endpoint to retrieve and clear queued commands."""
+    import time
     key = f"{appType}:{taskPath}"
+    SESSION_POLL_TIMES[key] = time.time()
     commands = SESSION_COMMANDS.get(key, [])
     if commands:
         SESSION_COMMANDS[key] = []

@@ -4,7 +4,7 @@ import Header from './components/Header';
 import PipelineTree from './components/PipelineTree';
 import WorkspaceContent from './components/WorkspaceContent';
 import DetailedInspector from './components/DetailedInspector';
-import { ProjectModal, FolderModal, TaskModal, ProjectSettingsModal } from './components/Modals';
+import { ProjectModal, FolderModal, TaskModal, ProjectSettingsModal, DeleteConfirmModal } from './components/Modals';
 import { NodeContextMenu, AssetContextMenu } from './components/ContextMenus';
 import Toast from './components/Toast';
 
@@ -21,6 +21,8 @@ export default function App() {
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isProjectSettingsModalOpen, setIsProjectSettingsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteTargetNode, setDeleteTargetNode] = useState<TreeNode | null>(null);
 
   // New item inputs
   const [newProjectName, setNewProjectName] = useState('');
@@ -366,6 +368,26 @@ export default function App() {
     }
   };
 
+  const handlePublishVersion = async (taskPath: string, assetName: string, versionFolder: string) => {
+    try {
+      const response = await fetch('/api/usd/publish-version', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskPath, assetName, versionFolder })
+      });
+      
+      if (response.ok) {
+        showToast(`Successfully set version ${versionFolder} as active published version!`);
+        if (activeProject) fetchProjectTree(activeProject.path, true);
+      } else {
+        const err = await response.json();
+        showToast(err.detail || 'Failed to update published version', 'error');
+      }
+    } catch (err) {
+      showToast('Error communicating with server', 'error');
+    }
+  };
+
   const handleLoadInDCC = async (appType: string, filePath: string) => {
     try {
       const parts = filePath.split('/');
@@ -400,21 +422,18 @@ export default function App() {
   };
 
 
-  const handleToggleDisableNode = async (node: TreeNode) => {
-    const nextState = !node.disabled;
+  const handleDeleteNode = async (node: TreeNode) => {
     try {
-      const response = await fetch(`/api/items/toggle-disabled`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: node.path, disabled: nextState })
+      const response = await fetch(`/api/items?path=${encodeURIComponent(node.path)}`, {
+        method: 'DELETE'
       });
       const data = await response.json();
       if (response.ok) {
-        showToast(data.message || `Item successfully ${nextState ? 'disabled' : 'enabled'}`);
+        showToast(data.message || 'Item successfully deleted');
         
-        // If the toggled node was selected, update its local disabled status
+        // If the deleted node was selected, clear selection
         if (selectedNode && selectedNode.path === node.path) {
-          setSelectedNode({ ...selectedNode, disabled: nextState });
+          setSelectedNode(null);
         }
         
         // Refresh project tree
@@ -422,10 +441,10 @@ export default function App() {
           fetchProjectTree(activeProject.path);
         }
       } else {
-        showToast(data.detail || 'Failed to toggle item status', 'error');
+        showToast(data.detail || 'Failed to delete item', 'error');
       }
     } catch (err) {
-      showToast('Error toggling item disabled status', 'error');
+      showToast('Error deleting item', 'error');
     }
   };
 
@@ -567,6 +586,7 @@ export default function App() {
             onOpenWorkfile={handleOpenWorkfile}
             onAssetContextMenu={handleAssetContextMenu}
             onLoadInDCC={handleLoadInDCC}
+            onPublishVersion={handlePublishVersion}
           />
         </div>
 
@@ -634,8 +654,9 @@ export default function App() {
           setNewTaskSubtype('model');
           setIsTaskModalOpen(true);
         }}
-        onToggleDisableItem={(node) => {
-          handleToggleDisableNode(node);
+        onDeleteItem={(node) => {
+          setDeleteTargetNode(node);
+          setIsDeleteModalOpen(true);
         }}
         onOpenProjectSettings={() => {
           setIsProjectSettingsModalOpen(true);
@@ -655,7 +676,20 @@ export default function App() {
         }}
       />
 
-
+      {/* MODAL 5: Delete Confirm */}
+      <DeleteConfirmModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeleteTargetNode(null);
+        }}
+        node={deleteTargetNode}
+        onConfirm={() => {
+          if (deleteTargetNode) {
+            handleDeleteNode(deleteTargetNode);
+          }
+        }}
+      />
 
       {/* ASSET CONTEXT MENU */}
       <AssetContextMenu

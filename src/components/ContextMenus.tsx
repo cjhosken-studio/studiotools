@@ -1,4 +1,4 @@
-import { FolderPlus, Plus, Sparkles, Settings, Eye, EyeOff } from 'lucide-react';
+import { FolderPlus, Plus, Sparkles, Settings, Trash2 } from 'lucide-react';
 import type { TreeNode, ProjectFile } from '../types';
 
 interface NodeContextMenuProps {
@@ -7,7 +7,7 @@ interface NodeContextMenuProps {
   onAddSubfolder: (node: TreeNode) => void;
   onAddTaskArea: (node: TreeNode) => void;
   onInitializeTask: (node: TreeNode) => void;
-  onToggleDisableItem: (node: TreeNode) => void;
+  onDeleteItem: (node: TreeNode) => void;
   onOpenProjectSettings: (node: TreeNode) => void;
 }
 
@@ -17,7 +17,7 @@ export function NodeContextMenu({
   onAddSubfolder,
   onAddTaskArea,
   onInitializeTask,
-  onToggleDisableItem,
+  onDeleteItem,
   onOpenProjectSettings,
 }: NodeContextMenuProps) {
   if (!contextMenu) return null;
@@ -98,15 +98,14 @@ export function NodeContextMenu({
             gap: '8px', 
             borderTop: '1px solid var(--border)', 
             borderRadius: 0, 
-            color: contextMenu.node.disabled ? 'var(--color-success)' : 'var(--color-warning)'
+            color: 'var(--color-danger)'
           }}
           onClick={() => {
-            onToggleDisableItem(contextMenu.node);
+            onDeleteItem(contextMenu.node);
             onClose();
           }}
         >
-          {contextMenu.node.disabled ? <Eye size={13} /> : <EyeOff size={13} />}
-          {contextMenu.node.disabled ? 'Enable Item' : 'Disable Item'}
+          <Trash2 size={13} /> Delete Item
         </button>
       )}
     </div>

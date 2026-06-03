@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { MouseEvent } from 'react';
 import { 
   Folder, 
@@ -10,8 +9,6 @@ import {
   Box, 
   Film, 
   Terminal,
-  Eye,
-  EyeOff,
   Shapes,
   Palette,
   Workflow,
@@ -51,41 +48,35 @@ export default function PipelineTree({
   onOpenProjectModal,
   onNodeContextMenu,
 }: PipelineTreeProps) {
-  const [showDisabled, setShowDisabled] = useState(false);
   
-  const getNodeIcon = (type: string, subtype: string, isDisabled?: boolean) => {
-    const color = isDisabled ? 'var(--text-muted)' : undefined;
-    if (type === 'project') return <Layers size={14} style={{ color: color || 'var(--color-usd)' }} />;
+  const getNodeIcon = (type: string, subtype: string) => {
+    if (type === 'project') return <Layers size={14} style={{ color: 'var(--color-usd)' }} />;
     if (type === 'taskarea') {
-      if (subtype === 'shot') return <Film size={14} style={{ color: color || 'hsl(190, 95%, 45%)' }} />;
-      if (subtype === 'asset') return <Box size={14} style={{ color: color || 'hsl(280, 85%, 65%)' }} />;
-      return <Folder size={14} style={{ color }} />;
+      if (subtype === 'shot') return <Film size={14} style={{ color: 'hsl(190, 95%, 45%)' }} />;
+      if (subtype === 'asset') return <Box size={14} style={{ color: 'hsl(280, 85%, 65%)' }} />;
+      return <Folder size={14} />;
     }
     if (type === 'task') {
       const sub = subtype.toLowerCase();
-      if (sub === 'model') return <Shapes size={14} style={{ color: color || 'hsl(200, 85%, 60%)' }} />;
-      if (sub === 'lookdev') return <Palette size={14} style={{ color: color || 'hsl(285, 80%, 65%)' }} />;
-      if (sub === 'rig') return <Workflow size={14} style={{ color: color || 'hsl(145, 75%, 50%)' }} />;
-      if (sub === 'groom') return <Scissors size={14} style={{ color: color || 'hsl(32, 95%, 55%)' }} />;
-      if (sub === 'layout') return <Layout size={14} style={{ color: color || 'hsl(45, 95%, 50%)' }} />;
-      if (sub === 'animate') return <Play size={14} style={{ color: color || 'hsl(180, 90%, 50%)' }} />;
-      if (sub === 'fx') return <Flame size={14} style={{ color: color || 'hsl(15, 95%, 50%)' }} />;
-      if (sub === 'light') return <Sun size={14} style={{ color: color || 'hsl(60, 95%, 60%)' }} />;
-      if (sub === 'comp') return <Layers size={14} style={{ color: color || 'hsl(340, 90%, 55%)' }} />;
-      if (sub === 'tool') return <Wrench size={14} style={{ color: color || 'hsl(215, 15%, 60%)' }} />;
-      return <Terminal size={14} style={{ color: color || 'var(--text-secondary)' }} />;
+      if (sub === 'model') return <Shapes size={14} style={{ color: 'hsl(200, 85%, 60%)' }} />;
+      if (sub === 'lookdev') return <Palette size={14} style={{ color: 'hsl(285, 80%, 65%)' }} />;
+      if (sub === 'rig') return <Workflow size={14} style={{ color: 'hsl(145, 75%, 50%)' }} />;
+      if (sub === 'groom') return <Scissors size={14} style={{ color: 'hsl(32, 95%, 55%)' }} />;
+      if (sub === 'layout') return <Layout size={14} style={{ color: 'hsl(45, 95%, 50%)' }} />;
+      if (sub === 'animate') return <Play size={14} style={{ color: 'hsl(180, 90%, 50%)' }} />;
+      if (sub === 'fx') return <Flame size={14} style={{ color: 'hsl(15, 95%, 50%)' }} />;
+      if (sub === 'light') return <Sun size={14} style={{ color: 'hsl(60, 95%, 60%)' }} />;
+      if (sub === 'comp') return <Layers size={14} style={{ color: 'hsl(340, 90%, 55%)' }} />;
+      if (sub === 'tool') return <Wrench size={14} style={{ color: 'hsl(215, 15%, 60%)' }} />;
+      return <Terminal size={14} style={{ color: 'var(--text-secondary)' }} />;
     }
-    return <Folder size={14} style={{ color }} />;
+    return <Folder size={14} />;
   };
 
   const renderTree = (node: TreeNode): React.ReactNode => {
-    if (node.disabled && !showDisabled) {
-      return null;
-    }
-
     const isExpanded = !!expandedNodes[node.path];
     const isSelected = selectedNode?.path === node.path;
-    const visibleChildren = node.children ? node.children.filter(child => !child.disabled || showDisabled) : [];
+    const visibleChildren = node.children || [];
     const hasVisibleChildren = visibleChildren.length > 0;
 
     return (
@@ -98,11 +89,7 @@ export default function PipelineTree({
           }}
           onContextMenu={(e) => onNodeContextMenu(node, e)}
           style={{ 
-            paddingLeft: '8px',
-            opacity: node.disabled ? 0.5 : 1,
-            color: node.disabled ? 'var(--text-muted)' : 'inherit',
-            fontStyle: node.disabled ? 'italic' : 'normal',
-            textDecoration: node.disabled ? 'line-through' : 'none'
+            paddingLeft: '8px'
           }}
         >
           <span 
@@ -117,7 +104,7 @@ export default function PipelineTree({
           >
             {hasVisibleChildren ? (isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />) : <span style={{ width: 12 }} />}
           </span>
-          {getNodeIcon(node.type, node.subtype, node.disabled)}
+          {getNodeIcon(node.type, node.subtype)}
           <span style={{ fontSize: '12.5px', fontWeight: isSelected ? 500 : 400 }}>{node.name}</span>
         </div>
         {hasVisibleChildren && isExpanded && (
@@ -134,23 +121,6 @@ export default function PipelineTree({
       <div className="panel-header">
         <h2>Pipeline Tree</h2>
         <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-          <button 
-            type="button"
-            className="btn btn-text" 
-            onClick={() => setShowDisabled(!showDisabled)}
-            title={showDisabled ? "Hide Disabled Items" : "Show Disabled Items"}
-            style={{ 
-              padding: '4px',
-              color: showDisabled ? 'var(--color-usd)' : 'var(--text-secondary)',
-              background: showDisabled ? 'rgba(0, 240, 255, 0.05)' : 'transparent',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {showDisabled ? <Eye size={16} /> : <EyeOff size={16} />}
-          </button>
           
           <button 
             className="btn btn-text" 

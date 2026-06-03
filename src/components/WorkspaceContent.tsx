@@ -16,6 +16,7 @@ interface WorkspaceContentProps {
   onOpenWorkfile: (file: ProjectFile) => void;
   onAssetContextMenu: (file: ProjectFile, e: MouseEvent) => void;
   onLoadInDCC: (appType: string, filePath: string) => void;
+  onPublishVersion: (taskPath: string, assetName: string, versionFolder: string) => void;
 }
 
 export default function WorkspaceContent({
@@ -30,6 +31,7 @@ export default function WorkspaceContent({
   onOpenWorkfile,
   onAssetContextMenu,
   onLoadInDCC,
+  onPublishVersion,
 }: WorkspaceContentProps) {
 
   if (activeUSDPath) {
@@ -61,51 +63,33 @@ export default function WorkspaceContent({
 
             {/* Applications Launcher Section (For Tasks) */}
             {selectedNode.type === 'task' ? (
-              selectedNode.disabled ? (
-                <div style={{ 
-                  padding: '16px 20px', 
-                  border: '1px solid rgba(240, 190, 0, 0.3)', 
-                  borderRadius: '8px', 
-                  background: 'rgba(240, 190, 0, 0.03)', 
-                  color: 'var(--color-warning)', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  gap: '4px' 
-                }}>
-                  <h3 style={{ fontSize: '13px', fontWeight: 600 }}>Task is Disabled</h3>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    This task is disabled. Re-enable it in the tree menu to launch DCC sessions.
-                  </p>
+              <div className="panel" style={{ background: 'var(--bg-card)' }}>
+                <div className="panel-header" style={{ height: '36px', padding: '0 12px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Launch DCC Software</span>
                 </div>
-              ) : (
-                <div className="panel" style={{ background: 'var(--bg-card)' }}>
-                  <div className="panel-header" style={{ height: '36px', padding: '0 12px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Launch DCC Software</span>
-                  </div>
-                  <div className="app-grid">
-                    {applications.filter(app => !app.disabled).map(app => {
-                      const isLaunching = launchingApp === app.name;
-                      return (
-                        <div 
-                          key={app.name} 
-                          className={`app-card app-${app.appType} ${isLaunching ? 'launching-pulse' : ''}`}
-                          onClick={() => onLaunchApp(app)}
-                          style={{ 
-                            opacity: app.installed ? 1 : 0.5,
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <AppIcon type={app.appType} size={28} />
-                          <span className="app-card-title">{app.name}</span>
-                          <span className="app-card-status">
-                            {isLaunching ? 'Launching...' : (app.installed ? 'Launch App' : 'Not Installed')}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div className="app-grid">
+                  {applications.filter(app => !app.disabled).map(app => {
+                    const isLaunching = launchingApp === app.name;
+                    return (
+                      <div 
+                        key={app.name} 
+                        className={`app-card app-${app.appType} ${isLaunching ? 'launching-pulse' : ''}`}
+                        onClick={() => onLaunchApp(app)}
+                        style={{ 
+                          opacity: app.installed ? 1 : 0.5,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <AppIcon type={app.appType} size={28} />
+                        <span className="app-card-title">{app.name}</span>
+                        <span className="app-card-status">
+                          {isLaunching ? 'Launching...' : (app.installed ? 'Launch App' : 'Not Installed')}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              )
+              </div>
             ) : (
               <div style={{ padding: '24px', border: '1px dashed var(--border)', borderRadius: '8px', textAlign: 'center', background: 'var(--bg-card)' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Navigational Folder</h3>
@@ -117,7 +101,9 @@ export default function WorkspaceContent({
 
             {/* Files Section (For Tasks) */}
             {selectedNode.type === 'task' && (() => {
-              const workfiles = selectedNode.files.filter(f => f.category === 'wip' || f.category === 'versions');
+              const workfiles = selectedNode.files.filter(f => f.category === 'wip');
+              workfiles.sort((a, b) => a.name.localeCompare(b.name));
+              const versionFiles = selectedNode.files.filter(f => f.category === 'versions' && f.name !== 'thumbnail.png');
               const publishedFiles = selectedNode.files.filter(f => f.category === 'published' && f.name !== 'thumbnail.png');
               
               return (
@@ -166,6 +152,8 @@ export default function WorkspaceContent({
                               if (file.ext === 'blend') appType = 'blender';
                               else if (file.ext === 'hip' || file.ext === 'hipnc' || file.ext === 'hiplc') appType = 'houdini';
                               else if (file.ext === 'nk') appType = 'nuke';
+                              else if (file.ext === 'mra') appType = 'mari';
+                              else if (file.ext === 'json') appType = 'comfyui';
                               
                               const app = applications.find(a => a.appType === appType);
                               const isInstalled = app ? app.installed : false;
@@ -176,7 +164,6 @@ export default function WorkspaceContent({
                                 <button 
                                   className="btn"
                                   onClick={() => onOpenWorkfile(file)}
-                                  disabled={selectedNode.disabled}
                                   style={{ 
                                     padding: '4px 10px', 
                                     fontSize: '11px',
@@ -187,10 +174,9 @@ export default function WorkspaceContent({
                                     border: '1px solid var(--border-light)',
                                     color: 'var(--text-secondary)',
                                     fontWeight: 500,
-                                    opacity: selectedNode.disabled ? 0.4 : 1,
-                                    cursor: selectedNode.disabled ? 'not-allowed' : 'pointer'
+                                    cursor: 'pointer'
                                   }}
-                                  title={selectedNode.disabled ? "This task is disabled" : `Open ${file.name} directly in ${app.name}`}
+                                  title={`Open ${file.name} directly in ${app.name}`}
                                 >
                                   Open Scene
                                 </button>
@@ -206,18 +192,18 @@ export default function WorkspaceContent({
                     )}
                   </div>
 
-                  {/* 2. Published USD Deliverables */}
+                  {/* 2. USD Versions */}
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                       <h4 style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Published USD Assets (Deliverables)
+                        Deliverables
                       </h4>
                     </div>
-                    {publishedFiles.length > 0 ? (() => {
-                      // Group published assets by their Base Asset Name
-                      const groupedAssets: Record<string, typeof publishedFiles> = {};
+                    {versionFiles.length > 0 ? (() => {
+                      // Group version assets by their Base Asset Name
+                      const groupedAssets: Record<string, typeof versionFiles> = {};
                       
-                      publishedFiles.forEach(file => {
+                      versionFiles.forEach(file => {
                         const baseName = file.name.replace(/\.[^/.]+$/, ""); // Strip extension
                         const match = baseName.match(/^(.+)_v(\d+)$/);
                         const assetKey = match ? match[1] : baseName;
@@ -247,9 +233,24 @@ export default function WorkspaceContent({
                             const versionsList = groupedAssets[assetKey];
                             const latestFile = versionsList[0];
                             
-                            // Retrieve selected version file path, or default to the latest file's absolute path
-                            const selectedPath = selectedUSDVersions[assetKey] || latestFile.absolutePath;
-                            const currentFile = versionsList.find(f => f.absolutePath === selectedPath) || latestFile;
+                            // Retrieve selected version option ("published" | "latest" | absolutePath)
+                            const selectedOption = selectedUSDVersions[assetKey] || "published";
+                            
+                            // Find the symlinked published file for this asset Key
+                            const publishedFile = publishedFiles.find(f => {
+                              const normPath = f.relativePath.replace(/\\/g, '/');
+                              return normPath.startsWith(`published/${assetKey}/`);
+                            });
+                            
+                            // Resolve the current file to display based on the selection
+                            let currentFile = latestFile;
+                            if (selectedOption === "published") {
+                              currentFile = publishedFile || latestFile;
+                            } else if (selectedOption === "latest") {
+                              currentFile = latestFile;
+                            } else {
+                              currentFile = versionsList.find(f => f.absolutePath === selectedOption) || latestFile;
+                            }
                             
                             const isUSD = currentFile.ext === 'usd' || currentFile.ext === 'usda' || currentFile.ext === 'usdc';
                             const hasThumb = !!currentFile.thumbnailPath;
@@ -270,6 +271,11 @@ export default function WorkspaceContent({
                               if (isBlender) dccAttribution = "Blender";
                               else if (isHoudini) dccAttribution = "Houdini";
                             }
+
+                            // Check if current version matches the published symlink version
+                            const currentVersionFolder = currentFile.name.replace(/\.[^/.]+$/, "");
+                            const publishedVersionFolder = publishedFile ? publishedFile.name.replace(/\.[^/.]+$/, "") : "";
+                            const isAlreadyPublished = !!publishedFile && (currentVersionFolder === publishedVersionFolder);
 
                             return (
                               <div 
@@ -341,44 +347,43 @@ export default function WorkspaceContent({
                                   </div>
                                   
                                   {/* Version Dropdown Selector */}
-                                  {versionsList.length > 1 && (
-                                    <div style={{ position: 'absolute', top: '8px', right: '8px' }} onClick={e => e.stopPropagation()}>
-                                      <select 
-                                        value={selectedPath}
-                                        onChange={(e) => {
-                                          const val = e.target.value;
-                                          setSelectedUSDVersions(prev => ({
-                                            ...prev,
-                                            [assetKey]: val
-                                          }));
-                                        }}
-                                        style={{ 
-                                          background: 'rgba(10, 15, 26, 0.85)', 
-                                          backdropFilter: 'blur(4px)',
-                                          border: '1px solid var(--border-light)',
-                                          borderRadius: '4px',
-                                          color: '#fff',
-                                          fontSize: '10px',
-                                          padding: '2px 4px',
-                                          fontWeight: 500,
-                                          outline: 'none',
-                                          cursor: 'pointer'
-                                        }}
-                                      >
-                                        {versionsList.map((verFile, idx) => {
-                                          const verBaseName = verFile.name.replace(/\.[^/.]+$/, "");
-                                          const verMatch = verBaseName.match(/_v(\d+)$/);
-                                          const verStr = verMatch ? `v${verMatch[1]}` : verBaseName;
-                                          const isLatest = idx === 0;
-                                          return (
-                                            <option key={verFile.absolutePath} value={verFile.absolutePath}>
-                                              {verStr}{isLatest ? " (Latest)" : ""}
-                                            </option>
-                                          );
-                                        })}
-                                      </select>
-                                    </div>
-                                  )}
+                                  <div style={{ position: 'absolute', top: '8px', right: '8px' }} onClick={e => e.stopPropagation()}>
+                                    <select 
+                                      value={selectedOption}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setSelectedUSDVersions(prev => ({
+                                          ...prev,
+                                          [assetKey]: val
+                                        }));
+                                      }}
+                                      style={{ 
+                                        background: 'rgba(10, 15, 26, 0.85)', 
+                                        backdropFilter: 'blur(4px)',
+                                        border: '1px solid var(--border-light)',
+                                        borderRadius: '4px',
+                                        color: '#fff',
+                                        fontSize: '10px',
+                                        padding: '2px 4px',
+                                        fontWeight: 500,
+                                        outline: 'none',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      <option value="published">published</option>
+                                      <option value="latest">latest</option>
+                                      {versionsList.map((verFile) => {
+                                        const verBaseName = verFile.name.replace(/\.[^/.]+$/, "");
+                                        const verMatch = verBaseName.match(/_v(\d+)$/);
+                                        const verStr = verMatch ? `v${verMatch[1]}` : verBaseName;
+                                        return (
+                                          <option key={verFile.absolutePath} value={verFile.absolutePath}>
+                                            {verStr}
+                                          </option>
+                                        );
+                                      })}
+                                    </select>
+                                  </div>
                                 </div>
 
                                 {/* Details Panel */}
@@ -402,13 +407,34 @@ export default function WorkspaceContent({
                                       >
                                         Inspect 3D Stage
                                       </button>
+
+                                      {/* Set as Published Button */}
+                                      {!isAlreadyPublished && selectedNode && (
+                                        <button 
+                                          className="btn"
+                                          onClick={() => {
+                                            const versionFolder = currentFile.name.replace(/\.[^/.]+$/, "");
+                                            onPublishVersion(selectedNode.path, assetKey, versionFolder);
+                                          }}
+                                          style={{ 
+                                            width: '100%', 
+                                            padding: '6px', 
+                                            fontSize: '12px', 
+                                            fontWeight: 500,
+                                            background: 'rgba(0, 240, 255, 0.1)',
+                                            border: '1px solid rgba(0, 240, 255, 0.4)',
+                                            color: 'var(--color-usd)'
+                                          }}
+                                        >
+                                          Set as Published
+                                        </button>
+                                      )}
                                       
                                       <div style={{ display: 'flex', gap: '6px' }}>
-                                        {currentFile.application === 'blender' && (
+                                        {((currentFile.application === 'blender') || (!currentFile.application && currentFile.relativePath.toLowerCase().includes("blender"))) && (
                                           <button 
                                             className="btn"
                                             onClick={() => onLoadInDCC('blender', currentFile.absolutePath)}
-                                            disabled={selectedNode.disabled}
                                             style={{ 
                                               flex: 1,
                                               padding: '5px', 
@@ -417,19 +443,17 @@ export default function WorkspaceContent({
                                               border: '1px solid rgba(234, 137, 36, 0.4)',
                                               color: 'var(--color-blender)',
                                               fontWeight: 500,
-                                              opacity: selectedNode.disabled ? 0.4 : 1,
-                                              cursor: selectedNode.disabled ? 'not-allowed' : 'pointer'
+                                              cursor: 'pointer'
                                             }}
-                                            title={selectedNode.disabled ? "This task is disabled" : "Load USD directly in Blender viewport"}
+                                            title="Load USD directly in Blender viewport"
                                           >
                                             → Blender
                                           </button>
                                         )}
-                                        {currentFile.application === 'houdini' && (
+                                        {((currentFile.application === 'houdini') || (!currentFile.application && currentFile.relativePath.toLowerCase().includes("houdini"))) && (
                                           <button 
                                             className="btn"
                                             onClick={() => onLoadInDCC('houdini', currentFile.absolutePath)}
-                                            disabled={selectedNode.disabled}
                                             style={{ 
                                               flex: 1,
                                               padding: '5px', 
@@ -438,10 +462,9 @@ export default function WorkspaceContent({
                                               border: '1px solid rgba(236, 90, 60, 0.4)',
                                               color: 'var(--color-houdini)',
                                               fontWeight: 500,
-                                              opacity: selectedNode.disabled ? 0.4 : 1,
-                                              cursor: selectedNode.disabled ? 'not-allowed' : 'pointer'
+                                              cursor: 'pointer'
                                             }}
-                                            title={selectedNode.disabled ? "This task is disabled" : "Load USD directly in Houdini stage network"}
+                                            title="Load USD directly in Houdini stage network"
                                           >
                                             → Houdini
                                           </button>
@@ -457,7 +480,7 @@ export default function WorkspaceContent({
                       );
                     })() : (
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '8px 12px', border: '1px dashed var(--border)', borderRadius: '6px', background: 'rgba(255,255,255,0.01)' }}>
-                        No published assets found. Export from Blender or Houdini to publish.
+                        No versioned USD files found. Export from Blender or Houdini to publish.
                       </div>
                     )}
                   </div>
