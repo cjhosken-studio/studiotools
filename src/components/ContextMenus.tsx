@@ -1,4 +1,4 @@
-import { FolderPlus, Plus, Sparkles } from 'lucide-react';
+import { FolderPlus, Plus, Sparkles, Settings, Eye, EyeOff } from 'lucide-react';
 import type { TreeNode, ProjectFile } from '../types';
 
 interface NodeContextMenuProps {
@@ -7,7 +7,8 @@ interface NodeContextMenuProps {
   onAddSubfolder: (node: TreeNode) => void;
   onAddTaskArea: (node: TreeNode) => void;
   onInitializeTask: (node: TreeNode) => void;
-  onSelectItem: (node: TreeNode) => void;
+  onToggleDisableItem: (node: TreeNode) => void;
+  onOpenProjectSettings: (node: TreeNode) => void;
 }
 
 export function NodeContextMenu({
@@ -16,7 +17,8 @@ export function NodeContextMenu({
   onAddSubfolder,
   onAddTaskArea,
   onInitializeTask,
-  onSelectItem,
+  onToggleDisableItem,
+  onOpenProjectSettings,
 }: NodeContextMenuProps) {
   if (!contextMenu) return null;
 
@@ -74,16 +76,39 @@ export function NodeContextMenu({
           Task area (leaf node)
         </div>
       )}
-      <button 
-        className="btn btn-text" 
-        style={{ justifyContent: 'flex-start', padding: '8px 14px', fontSize: '12px', width: '100%', gap: '8px', borderTop: '1px solid var(--border)', borderRadius: 0 }}
-        onClick={() => {
-          onSelectItem(contextMenu.node);
-          onClose();
-        }}
-      >
-        Select Item
-      </button>
+      {contextMenu.node.type === 'project' ? (
+        <button 
+          className="btn btn-text" 
+          style={{ justifyContent: 'flex-start', padding: '8px 14px', fontSize: '12px', width: '100%', gap: '8px', borderTop: '1px solid var(--border)', borderRadius: 0 }}
+          onClick={() => {
+            onOpenProjectSettings(contextMenu.node);
+            onClose();
+          }}
+        >
+          <Settings size={13} /> Open Project Settings
+        </button>
+      ) : (
+        <button 
+          className="btn btn-text" 
+          style={{ 
+            justifyContent: 'flex-start', 
+            padding: '8px 14px', 
+            fontSize: '12px', 
+            width: '100%', 
+            gap: '8px', 
+            borderTop: '1px solid var(--border)', 
+            borderRadius: 0, 
+            color: contextMenu.node.disabled ? 'var(--color-success)' : 'var(--color-warning)'
+          }}
+          onClick={() => {
+            onToggleDisableItem(contextMenu.node);
+            onClose();
+          }}
+        >
+          {contextMenu.node.disabled ? <Eye size={13} /> : <EyeOff size={13} />}
+          {contextMenu.node.disabled ? 'Enable Item' : 'Disable Item'}
+        </button>
+      )}
     </div>
   );
 }

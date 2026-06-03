@@ -4,7 +4,7 @@ import Header from './components/Header';
 import PipelineTree from './components/PipelineTree';
 import WorkspaceContent from './components/WorkspaceContent';
 import DetailedInspector from './components/DetailedInspector';
-import { ProjectModal, FolderModal, TaskModal } from './components/Modals';
+import { ProjectModal, FolderModal, TaskModal, ProjectSettingsModal } from './components/Modals';
 import { NodeContextMenu, AssetContextMenu } from './components/ContextMenus';
 import Toast from './components/Toast';
 
@@ -20,6 +20,7 @@ export default function App() {
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isProjectSettingsModalOpen, setIsProjectSettingsModalOpen] = useState(false);
 
   // New item inputs
   const [newProjectName, setNewProjectName] = useState('');
@@ -86,6 +87,14 @@ export default function App() {
   }, [activeProject]);
 
   useEffect(() => {
+    if (activeProject) {
+      localStorage.setItem('st_last_project_path', activeProject.path);
+    } else {
+      localStorage.removeItem('st_last_project_path');
+    }
+  }, [activeProject]);
+
+  useEffect(() => {
     if (!activeProject) return;
     
     // Background polling: silently refresh the project tree every 3 seconds to auto-refresh
@@ -107,7 +116,14 @@ export default function App() {
       const data = await response.json();
       setProjects(data);
       if (data.length > 0 && !activeProject) {
-        setActiveProject(data[0]);
+        const lastClosedPath = localStorage.getItem('st_last_project_path');
+        const lastClosedProject = lastClosedPath ? data.find((p: Project) => p.path === lastClosedPath) : null;
+        if (lastClosedProject) {
+          setActiveProject(lastClosedProject);
+        } else {
+          const firstActive = data.find((p: Project) => !p.archived);
+          setActiveProject(firstActive || data[0]);
+        }
       }
     } catch (err) {
       showToast('Failed to fetch projects list', 'error');
@@ -245,18 +261,6 @@ export default function App() {
   const handleLaunchApp = async (app: Application) => {
     if (!selectedNode || selectedNode.type !== 'task') return;
 
-    // Direct web viewer inspect trigger
-    if (app.appType === 'usd_web') {
-      const usdFile = selectedNode.files.find(f => f.ext === 'usd' || f.ext === 'usda');
-      if (usdFile) {
-        setActiveUSDPath(usdFile.absolutePath);
-        showToast(`Inspecting USD Scene: ${usdFile.name}`);
-      } else {
-        showToast('No USD file found in this task to inspect. Initialize one below!', 'error');
-      }
-      return;
-    }
-
     setLaunchingApp(app.name);
     try {
       const response = await fetch('/api/launch', {
@@ -266,7 +270,8 @@ export default function App() {
           appName: app.name,
           appType: app.appType,
           executable: app.executable,
-          taskPath: selectedNode.path
+          taskPath: selectedNode.path,
+          startupScript: app.startupScript
         })
       });
       
@@ -292,6 +297,8 @@ export default function App() {
     if (file.ext === 'blend') appType = 'blender';
     else if (file.ext === 'hip' || file.ext === 'hipnc' || file.ext === 'hiplc') appType = 'houdini';
     else if (file.ext === 'nk') appType = 'nuke';
+    else if (file.ext === 'mra') appType = 'mari';
+    else if (file.ext === 'json') appType = 'comfyui';
     
     if (!appType) {
       showToast(`Unsupported file type to open: .${file.ext}`, 'error');
@@ -316,11 +323,12 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          appName: app.name,
-          appType: app.appType,
-          executable: app.executable,
-          taskPath: selectedNode.path,
-          preload: file.absolutePath
+           appName: app.name,
+           appType: app.appType,
+           executable: app.executable,
+           taskPath: selectedNode.path,
+           preload: file.absolutePath,
+           startupScript: app.startupScript
         })
       });
       
@@ -391,21 +399,116 @@ export default function App() {
     }
   };
 
-  const handleInitializeUSD = async () => {
-    if (!selectedNode || selectedNode.type !== 'task') return;
-    
-    // Create new usd stage path
-    const usdPath = `${selectedNode.path}/wip/scene_v001.usda`;
+
+  const handleToggleDisableNode = async (node: TreeNode) => {
+    const nextState = !node.disabled;
     try {
-      const response = await fetch(`/api/usd/create?path=${encodeURIComponent(usdPath)}`, { method: 'POST' });
+      const response = await fetch(`/api/items/toggle-disabled`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: node.path, disabled: nextState })
+      });
+      const data = await response.json();
       if (response.ok) {
-        showToast('Created base USD asset!');
-        if (activeProject) fetchProjectTree(activeProject.path);
+        showToast(data.message || `Item successfully ${nextState ? 'disabled' : 'enabled'}`);
+        
+        // If the toggled node was selected, update its local disabled status
+        if (selectedNode && selectedNode.path === node.path) {
+          setSelectedNode({ ...selectedNode, disabled: nextState });
+        }
+        
+        // Refresh project tree
+        if (activeProject) {
+          fetchProjectTree(activeProject.path);
+        }
       } else {
-        showToast('Failed to create base USD asset', 'error');
+        showToast(data.detail || 'Failed to toggle item status', 'error');
       }
     } catch (err) {
-      showToast('Server error during USD creation', 'error');
+      showToast('Error toggling item disabled status', 'error');
+    }
+  };
+
+  const handleArchiveProject = async (project: Project) => {
+    try {
+      const response = await fetch('/api/projects/archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: project.path, archived: !project.archived })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        showToast(data.message || 'Project archive status updated!');
+        setIsProjectSettingsModalOpen(false);
+        
+        // Fetch fresh projects
+        const responseList = await fetch('/api/projects');
+        if (responseList.ok) {
+          const updatedProjects = await responseList.json();
+          setProjects(updatedProjects);
+          
+          if (!project.archived) {
+            // We just archived the active project
+            if (activeProject && activeProject.path === project.path) {
+              const activeOnes = updatedProjects.filter((p: Project) => !p.archived);
+              if (activeOnes.length > 0) {
+                setActiveProject(activeOnes[0]);
+              } else {
+                setActiveProject(null);
+              }
+            }
+          } else {
+            // We just restored it, make it active
+            const restored = updatedProjects.find((p: Project) => p.path === project.path);
+            if (restored) setActiveProject(restored);
+          }
+        }
+      } else {
+        showToast(data.detail || 'Failed to archive project', 'error');
+      }
+    } catch (err) {
+      showToast('Error updating archive status', 'error');
+    }
+  };
+
+  const handleDeleteProject = async (project: Project, deleteDiskFiles: boolean) => {
+    try {
+      const response = await fetch('/api/projects/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: project.path, deleteDiskFiles })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        showToast(data.message || 'Project deleted successfully!');
+        setIsProjectSettingsModalOpen(false);
+        
+        // Reset selection if active
+        if (activeProject && activeProject.path === project.path) {
+          setActiveProject(null);
+          setProjectTree(null);
+          setSelectedNode(null);
+        }
+
+        // Refresh project list and switch context
+        const responseList = await fetch('/api/projects');
+        if (responseList.ok) {
+          const updatedProjects = await responseList.json();
+          setProjects(updatedProjects);
+          const activeOnes = updatedProjects.filter((p: Project) => !p.archived);
+          if (activeOnes.length > 0) {
+            setActiveProject(activeOnes[0]);
+          } else if (updatedProjects.length > 0) {
+            setActiveProject(updatedProjects[0]);
+          } else {
+            setActiveProject(null);
+          }
+        }
+      } else {
+        showToast(data.detail || 'Failed to delete project', 'error');
+      }
+    } catch (err) {
+      showToast('Error deleting project', 'error');
     }
   };
 
@@ -463,7 +566,6 @@ export default function App() {
             onLaunchApp={handleLaunchApp}
             onOpenWorkfile={handleOpenWorkfile}
             onAssetContextMenu={handleAssetContextMenu}
-            onInitializeUSD={handleInitializeUSD}
             onLoadInDCC={handleLoadInDCC}
           />
         </div>
@@ -532,11 +634,28 @@ export default function App() {
           setNewTaskSubtype('model');
           setIsTaskModalOpen(true);
         }}
-        onSelectItem={(node) => {
-          setSelectedNode(node);
-          setActiveUSDPath(null);
+        onToggleDisableItem={(node) => {
+          handleToggleDisableNode(node);
+        }}
+        onOpenProjectSettings={() => {
+          setIsProjectSettingsModalOpen(true);
         }}
       />
+
+      {/* MODAL 4: Project Settings */}
+      <ProjectSettingsModal
+        isOpen={isProjectSettingsModalOpen}
+        onClose={() => setIsProjectSettingsModalOpen(false)}
+        project={activeProject}
+        onArchiveToggle={handleArchiveProject}
+        onDeleteProject={handleDeleteProject}
+        onSaveApplications={(updatedList) => {
+          setApplications(updatedList);
+          showToast('Project software configurations updated!');
+        }}
+      />
+
+
 
       {/* ASSET CONTEXT MENU */}
       <AssetContextMenu

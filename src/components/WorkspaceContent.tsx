@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction, MouseEvent } from 'react';
-import { Layout, Layers, File } from 'lucide-react';
+import { Layout, File } from 'lucide-react';
 import USDInspector from './USDInspector';
+import { AppIcon } from './AppIcon';
 import type { TreeNode, Application, ProjectFile } from '../types';
 
 interface WorkspaceContentProps {
@@ -14,7 +15,6 @@ interface WorkspaceContentProps {
   onLaunchApp: (app: Application) => void;
   onOpenWorkfile: (file: ProjectFile) => void;
   onAssetContextMenu: (file: ProjectFile, e: MouseEvent) => void;
-  onInitializeUSD: () => void;
   onLoadInDCC: (appType: string, filePath: string) => void;
 }
 
@@ -29,7 +29,6 @@ export default function WorkspaceContent({
   onLaunchApp,
   onOpenWorkfile,
   onAssetContextMenu,
-  onInitializeUSD,
   onLoadInDCC,
 }: WorkspaceContentProps) {
 
@@ -62,33 +61,51 @@ export default function WorkspaceContent({
 
             {/* Applications Launcher Section (For Tasks) */}
             {selectedNode.type === 'task' ? (
-              <div className="panel" style={{ background: 'var(--bg-card)' }}>
-                <div className="panel-header" style={{ height: '36px', padding: '0 12px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Launch DCC Software</span>
+              selectedNode.disabled ? (
+                <div style={{ 
+                  padding: '16px 20px', 
+                  border: '1px solid rgba(240, 190, 0, 0.3)', 
+                  borderRadius: '8px', 
+                  background: 'rgba(240, 190, 0, 0.03)', 
+                  color: 'var(--color-warning)', 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  gap: '4px' 
+                }}>
+                  <h3 style={{ fontSize: '13px', fontWeight: 600 }}>Task is Disabled</h3>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    This task is disabled. Re-enable it in the tree menu to launch DCC sessions.
+                  </p>
                 </div>
-                <div className="app-grid">
-                  {applications.map(app => {
-                    const isLaunching = launchingApp === app.name;
-                    return (
-                      <div 
-                        key={app.name} 
-                        className={`app-card app-${app.appType} ${isLaunching ? 'launching-pulse' : ''}`}
-                        onClick={() => onLaunchApp(app)}
-                        style={{ 
-                          opacity: app.installed ? 1 : 0.5,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <Layers size={28} style={{ color: app.appType === 'usd_web' ? 'var(--color-usd)' : (app.appType === 'blender' ? 'var(--color-blender)' : (app.appType === 'houdini' ? 'var(--color-houdini)' : 'var(--color-nuke)')) }} />
-                        <span className="app-card-title">{app.name}</span>
-                        <span className="app-card-status">
-                          {isLaunching ? 'Launching...' : (app.installed ? 'Launch App' : 'Not Installed')}
-                        </span>
-                      </div>
-                    );
-                  })}
+              ) : (
+                <div className="panel" style={{ background: 'var(--bg-card)' }}>
+                  <div className="panel-header" style={{ height: '36px', padding: '0 12px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Launch DCC Software</span>
+                  </div>
+                  <div className="app-grid">
+                    {applications.filter(app => !app.disabled).map(app => {
+                      const isLaunching = launchingApp === app.name;
+                      return (
+                        <div 
+                          key={app.name} 
+                          className={`app-card app-${app.appType} ${isLaunching ? 'launching-pulse' : ''}`}
+                          onClick={() => onLaunchApp(app)}
+                          style={{ 
+                            opacity: app.installed ? 1 : 0.5,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <AppIcon type={app.appType} size={28} />
+                          <span className="app-card-title">{app.name}</span>
+                          <span className="app-card-status">
+                            {isLaunching ? 'Launching...' : (app.installed ? 'Launch App' : 'Not Installed')}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )
             ) : (
               <div style={{ padding: '24px', border: '1px dashed var(--border)', borderRadius: '8px', textAlign: 'center', background: 'var(--bg-card)' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>Navigational Folder</h3>
@@ -159,6 +176,7 @@ export default function WorkspaceContent({
                                 <button 
                                   className="btn"
                                   onClick={() => onOpenWorkfile(file)}
+                                  disabled={selectedNode.disabled}
                                   style={{ 
                                     padding: '4px 10px', 
                                     fontSize: '11px',
@@ -168,9 +186,11 @@ export default function WorkspaceContent({
                                     background: 'rgba(255, 255, 255, 0.05)',
                                     border: '1px solid var(--border-light)',
                                     color: 'var(--text-secondary)',
-                                    fontWeight: 500
+                                    fontWeight: 500,
+                                    opacity: selectedNode.disabled ? 0.4 : 1,
+                                    cursor: selectedNode.disabled ? 'not-allowed' : 'pointer'
                                   }}
-                                  title={`Open ${file.name} directly in ${app.name}`}
+                                  title={selectedNode.disabled ? "This task is disabled" : `Open ${file.name} directly in ${app.name}`}
                                 >
                                   Open Scene
                                 </button>
@@ -192,11 +212,6 @@ export default function WorkspaceContent({
                       <h4 style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                         Published USD Assets (Deliverables)
                       </h4>
-                      {publishedFiles.length === 0 && (
-                        <button className="btn btn-primary" onClick={onInitializeUSD} style={{ padding: '4px 10px', fontSize: '11px' }}>
-                          Initialize Empty USD Asset
-                        </button>
-                      )}
                     </div>
                     {publishedFiles.length > 0 ? (() => {
                       // Group published assets by their Base Asset Name
@@ -393,6 +408,7 @@ export default function WorkspaceContent({
                                           <button 
                                             className="btn"
                                             onClick={() => onLoadInDCC('blender', currentFile.absolutePath)}
+                                            disabled={selectedNode.disabled}
                                             style={{ 
                                               flex: 1,
                                               padding: '5px', 
@@ -400,9 +416,11 @@ export default function WorkspaceContent({
                                               background: 'rgba(234, 137, 36, 0.15)',
                                               border: '1px solid rgba(234, 137, 36, 0.4)',
                                               color: 'var(--color-blender)',
-                                              fontWeight: 500
+                                              fontWeight: 500,
+                                              opacity: selectedNode.disabled ? 0.4 : 1,
+                                              cursor: selectedNode.disabled ? 'not-allowed' : 'pointer'
                                             }}
-                                            title="Load USD directly in Blender viewport"
+                                            title={selectedNode.disabled ? "This task is disabled" : "Load USD directly in Blender viewport"}
                                           >
                                             → Blender
                                           </button>
@@ -411,6 +429,7 @@ export default function WorkspaceContent({
                                           <button 
                                             className="btn"
                                             onClick={() => onLoadInDCC('houdini', currentFile.absolutePath)}
+                                            disabled={selectedNode.disabled}
                                             style={{ 
                                               flex: 1,
                                               padding: '5px', 
@@ -418,9 +437,11 @@ export default function WorkspaceContent({
                                               background: 'rgba(236, 90, 60, 0.15)',
                                               border: '1px solid rgba(236, 90, 60, 0.4)',
                                               color: 'var(--color-houdini)',
-                                              fontWeight: 500
+                                              fontWeight: 500,
+                                              opacity: selectedNode.disabled ? 0.4 : 1,
+                                              cursor: selectedNode.disabled ? 'not-allowed' : 'pointer'
                                             }}
-                                            title="Load USD directly in Houdini stage network"
+                                            title={selectedNode.disabled ? "This task is disabled" : "Load USD directly in Houdini stage network"}
                                           >
                                             → Houdini
                                           </button>

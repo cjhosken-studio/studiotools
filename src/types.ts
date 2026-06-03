@@ -1,6 +1,7 @@
 export interface Project {
   name: string;
   path: string;
+  archived?: boolean;
 }
 
 export interface ProjectFile {
@@ -21,6 +22,7 @@ export interface TreeNode {
   subtype: string;
   children: TreeNode[];
   files: ProjectFile[];
+  disabled?: boolean;
 }
 
 export interface Application {
@@ -30,4 +32,6 @@ export interface Application {
   installed: boolean;
   extensions: string[];
   icon: string;
+  disabled?: boolean;
+  startupScript?: string;
 }

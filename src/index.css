@@ -33,6 +33,12 @@
   --color-nuke: hsl(330, 90%, 50%);
   --color-nuke-glow: hsla(330, 90%, 50%, 0.15);
 
+  --color-mari: hsl(170, 95%, 45%);
+  --color-mari-glow: hsla(170, 95%, 45%, 0.15);
+
+  --color-comfyui: hsl(260, 95%, 65%);
+  --color-comfyui-glow: hsla(260, 95%, 65%, 0.15);
+
   --color-success: hsl(145, 80%, 45%);
   --color-warning: hsl(45, 95%, 50%);
   --color-danger: hsl(355, 85%, 55%);
@@ -357,6 +363,24 @@ body {
 .app-card.app-nuke:hover {
   border-color: var(--color-nuke);
   box-shadow: 0 4px 15px var(--color-nuke-glow);
+}
+
+/* Mari styling card */
+.app-card.app-mari::before {
+  background: var(--color-mari);
+}
+.app-card.app-mari:hover {
+  border-color: var(--color-mari);
+  box-shadow: 0 4px 15px var(--color-mari-glow);
+}
+
+/* ComfyUI styling card */
+.app-card.app-comfyui::before {
+  background: var(--color-comfyui);
+}
+.app-card.app-comfyui:hover {
+  border-color: var(--color-comfyui);
+  box-shadow: 0 4px 15px var(--color-comfyui-glow);
 }
 
 /* USD Inspector card */

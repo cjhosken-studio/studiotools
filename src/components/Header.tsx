@@ -35,9 +35,20 @@ export default function Header({
             }}
             style={{ background: 'var(--bg-app)', padding: '5px 10px', fontSize: '12.5px' }}
           >
-            {projects.map(p => (
-              <option key={p.path} value={p.path}>{p.name}</option>
-            ))}
+            {projects.filter(p => !p.archived).length > 0 && (
+              <optgroup label="Active Projects">
+                {projects.filter(p => !p.archived).map(p => (
+                  <option key={p.path} value={p.path}>{p.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {projects.filter(p => p.archived).length > 0 && (
+              <optgroup label="Archived Projects">
+                {projects.filter(p => p.archived).map(p => (
+                  <option key={p.path} value={p.path}>{p.name} (Archived)</option>
+                ))}
+              </optgroup>
+            )}
           </select>
         ) : (
           <button 

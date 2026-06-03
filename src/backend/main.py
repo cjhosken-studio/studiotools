@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import yaml
 import glob
 import subprocess
@@ -51,8 +52,36 @@ class LaunchRequest(BaseModel):
     executable: str
     taskPath: str
     preload: Optional[str] = None
+    startupScript: Optional[str] = None
+
+class ProjectArchiveRequest(BaseModel):
+    path: str
+    archived: bool
+
+class ProjectDeleteRequest(BaseModel):
+    path: str
+    deleteDiskFiles: bool
+
+class ApplicationModel(BaseModel):
+    name: str
+    appType: str
+    executable: str
+    installed: bool
+    extensions: List[str]
+    icon: str
+    disabled: Optional[bool] = False
+    startupScript: Optional[str] = None
+
+class ProjectApplicationsUpdate(BaseModel):
+    projectPath: str
+    applications: List[ApplicationModel]
+
+class ToggleDisabledRequest(BaseModel):
+    path: str
+    disabled: bool
 
 # --- Helper Functions ---
+
 
 def load_projects_list() -> List[dict]:
     if not os.path.isfile(PROJECTS_CONFIG):
@@ -60,7 +89,21 @@ def load_projects_list() -> List[dict]:
     try:
         with open(PROJECTS_CONFIG, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
-            return data.get("projects", [])
+            projects = data.get("projects", [])
+            
+        valid_projects = []
+        changed = False
+        for p in projects:
+            if os.path.exists(p.get("path", "")):
+                valid_projects.append(p)
+            else:
+                changed = True
+                print(f"Auto-removing invalid project context: {p.get('name')} ({p.get('path')})")
+                
+        if changed:
+            save_projects_list(valid_projects)
+            
+        return valid_projects
     except Exception:
         return []
 
@@ -162,17 +205,25 @@ def get_project_tree(path: str):
         node_type = "folder"
         subtype = "custom"
         
+        disabled = False
         project_yaml = os.path.join(current_path, "project.yaml")
         folder_yaml = os.path.join(current_path, "folder.yaml")
         
         if os.path.isfile(project_yaml):
             node_type = "project"
+            try:
+                with open(project_yaml, "r", encoding="utf-8") as f:
+                    data = yaml.safe_load(f) or {}
+                    disabled = data.get("disabled", False)
+            except Exception:
+                pass
         elif os.path.isfile(folder_yaml):
             try:
-                with open(folder_yaml, "r") as f:
+                with open(folder_yaml, "r", encoding="utf-8") as f:
                     data = yaml.safe_load(f) or {}
                     node_type = data.get("type", "folder")
                     subtype = data.get("subtype", "custom")
+                    disabled = data.get("disabled", False)
             except Exception:
                 pass
 
@@ -266,6 +317,7 @@ def get_project_tree(path: str):
             "path": current_path,
             "type": node_type,
             "subtype": subtype,
+            "disabled": disabled,
             "children": children,
             "files": files
         }
@@ -304,20 +356,29 @@ def create_task(req: TaskCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/applications")
-def get_applications(projectPath: str):
-    """Scans the system for applications and returns available tools for launch."""
+def scan_system_applications() -> List[dict]:
     apps = []
     
     # 1. Blender
     blender_exe = None
-    for path in ["/usr/bin/blender", "/snap/bin/blender", "/usr/local/bin/blender"]:
-        if os.path.isfile(path):
-            blender_exe = path
-            break
-            
+    blender_version = None
+    
+    blender_paths = glob.glob("/public/software/blender_foundation/blender/blender-*-linux-x64/blender")
+    if blender_paths:
+        blender_exe = blender_paths[0]
+        match = re.search(r"blender-(\d+\.\d+\.\d+)-linux-x64", blender_exe)
+        if match:
+            blender_version = match.group(1)
+    
+    if not blender_exe:
+        for path in ["/usr/bin/blender", "/snap/bin/blender", "/usr/local/bin/blender"]:
+            if os.path.isfile(path):
+                blender_exe = path
+                break
+                
+    blender_name = f"Blender {blender_version}" if blender_version else "Blender"
     apps.append({
-        "name": "Blender",
+        "name": blender_name,
         "appType": "blender",
         "executable": blender_exe or "mock_blender",
         "installed": blender_exe is not None,
@@ -327,14 +388,29 @@ def get_applications(projectPath: str):
     
     # 2. Houdini
     houdini_exe = None
-    for path in sorted(glob.glob("/opt/hfs*")):
-        exe = os.path.join(path, "bin", "houdini")
-        if os.path.isfile(exe):
-            houdini_exe = exe
-            break
+    houdini_version = None
+    
+    houdini_paths = sorted(glob.glob("/public/software/sidefx/hfs*/bin/houdini"))
+    if houdini_paths:
+        houdini_exe = houdini_paths[-1]
+        match = re.search(r"hfs(\d+\.\d+\.\d+)", houdini_exe)
+        if match:
+            houdini_version = match.group(1)
             
+    if not houdini_exe:
+        fallback_paths = sorted(glob.glob("/opt/hfs*"))
+        for path in fallback_paths:
+            exe = os.path.join(path, "bin", "houdini")
+            if os.path.isfile(exe):
+                houdini_exe = exe
+                match = re.search(r"hfs(\d+\.\d+\.\d+)", exe)
+                if match:
+                    houdini_version = match.group(1)
+                break
+                
+    houdini_name = f"Houdini {houdini_version}" if houdini_version else "Houdini"
     apps.append({
-        "name": "Houdini",
+        "name": houdini_name,
         "appType": "houdini",
         "executable": houdini_exe or "mock_houdini",
         "installed": houdini_exe is not None,
@@ -344,15 +420,41 @@ def get_applications(projectPath: str):
 
     # 3. Nuke
     nuke_exe = None
-    for path in sorted(glob.glob("/usr/local/Nuke*")) + sorted(glob.glob("/opt/Nuke*")):
-        exe = os.path.join(path, "Nuke*")
-        matches = glob.glob(exe)
-        if matches and os.path.isfile(matches[0]):
-            nuke_exe = matches[0]
-            break
-            
+    nuke_version = None
+    
+    nuke_paths = sorted(glob.glob("/public/software/foundry/nuke/Nuke*"))
+    for nuke_dir in nuke_paths:
+        dir_name = os.path.basename(nuke_dir)
+        match = re.search(r"Nuke(\d+\.\d+v\d+|\d+\.\d+)", dir_name, re.IGNORECASE)
+        if match:
+            version_str = match.group(1)
+            exe_glob = os.path.join(nuke_dir, "Nuke*")
+            exe_matches = sorted(glob.glob(exe_glob))
+            for em in exe_matches:
+                if os.path.isfile(em) and not em.endswith((".so", ".dylib", ".dll", ".crt", ".conf")):
+                    if os.path.basename(em).startswith("Nuke"):
+                        nuke_exe = em
+                        nuke_version = version_str
+                        break
+            if nuke_exe:
+                break
+                
+    if not nuke_exe:
+        fallback_dirs = sorted(glob.glob("/usr/local/Nuke*")) + sorted(glob.glob("/opt/Nuke*"))
+        for path in fallback_dirs:
+            exe_glob = os.path.join(path, "Nuke*")
+            exe_matches = glob.glob(exe_glob)
+            if exe_matches and os.path.isfile(exe_matches[0]):
+                nuke_exe = exe_matches[0]
+                dir_name = os.path.basename(path)
+                match = re.search(r"Nuke(\d+\.\d+v\d+|\d+\.\d+)", dir_name, re.IGNORECASE)
+                if match:
+                    nuke_version = match.group(1)
+                break
+                
+    nuke_name = f"Nuke {nuke_version}" if nuke_version else "Nuke"
     apps.append({
-        "name": "Nuke",
+        "name": nuke_name,
         "appType": "nuke",
         "executable": nuke_exe or "mock_nuke",
         "installed": nuke_exe is not None,
@@ -360,17 +462,147 @@ def get_applications(projectPath: str):
         "icon": "nuke"
     })
 
-    # Add a built-in interactive USD Web Editor
+    # 4. Mari
+    mari_exe = None
+    mari_version = None
+    
+    mari_paths = sorted(glob.glob("/public/software/foundry/mari/Mari*/mari"))
+    if mari_paths:
+        mari_exe = mari_paths[-1]
+        dir_name = os.path.basename(os.path.dirname(mari_exe))
+        match = re.search(r"Mari(\d+\.\d+v\d+|\d+\.\d+)", dir_name, re.IGNORECASE)
+        if match:
+            mari_version = match.group(1)
+            
+    if not mari_exe:
+        fallback_dirs = sorted(glob.glob("/usr/local/Mari*")) + sorted(glob.glob("/opt/Mari*"))
+        for path in fallback_dirs:
+            exe = os.path.join(path, "mari")
+            if os.path.isfile(exe):
+                mari_exe = exe
+                dir_name = os.path.basename(path)
+                match = re.search(r"Mari(\d+\.\d+v\d+|\d+\.\d+)", dir_name, re.IGNORECASE)
+                if match:
+                    mari_version = match.group(1)
+                break
+                
+    mari_name = f"Mari {mari_version}" if mari_version else "Mari"
     apps.append({
-        "name": "USD Inspector",
-        "appType": "usd_web",
-        "executable": "web_viewer",
-        "installed": True,
-        "extensions": ["usd", "usda", "usdc"],
-        "icon": "usd"
+        "name": mari_name,
+        "appType": "mari",
+        "executable": mari_exe or "mock_mari",
+        "installed": mari_exe is not None,
+        "extensions": ["mra"],
+        "icon": "mari"
+    })
+
+    # 5. ComfyUI
+    comfyui_exe = None
+    comfyui_version = None
+    
+    comfy_sh = "/public/software/comfyui/goComfy.sh"
+    if os.path.isfile(comfy_sh):
+        comfyui_exe = comfy_sh
+        version_file = "/public/software/comfyui/ComfyUI/comfyui_version.py"
+        if os.path.isfile(version_file):
+            try:
+                with open(version_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                v_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+                if v_match:
+                    comfyui_version = v_match.group(1)
+            except Exception:
+                pass
+    else:
+        for path in ["/public/software/comfyui/ComfyUI/main.py", "/usr/local/bin/comfyui", "/opt/comfyui/main.py"]:
+            if os.path.isfile(path):
+                comfyui_exe = path
+                break
+                
+    comfyui_name = f"ComfyUI {comfyui_version}" if comfyui_version else "ComfyUI"
+    apps.append({
+        "name": comfyui_name,
+        "appType": "comfyui",
+        "executable": comfyui_exe or "mock_comfyui",
+        "installed": comfyui_exe is not None,
+        "extensions": ["json"],
+        "icon": "comfyui"
     })
 
     return apps
+
+@app.get("/api/applications/scan")
+def get_applications_scan():
+    """Scans the system paths for standard DCC software and returns them."""
+    return scan_system_applications()
+
+@app.get("/api/applications")
+def get_applications(projectPath: str):
+    """Gets applications configured for the project, falling back to scanned ones."""
+    yaml_path = os.path.join(projectPath, "project.yaml")
+    scanned_apps = scan_system_applications()
+    if os.path.isfile(yaml_path):
+        try:
+            with open(yaml_path, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f) or {}
+            
+            apps = data.get("applications")
+            if apps is None:
+                apps = scanned_apps
+                data["applications"] = apps
+                with open(yaml_path, "w", encoding="utf-8") as f:
+                    yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
+                return apps
+            
+            for app in apps:
+                app_exe = app.get("executable", "")
+                app["installed"] = "mock_" in app_exe or os.path.exists(app_exe)
+                
+            # Merge newly scanned/installed DCCs
+            modified = False
+            for sa in scanned_apps:
+                if not sa.get("installed"):
+                    continue
+                exists = False
+                for ea in apps:
+                    if ea.get("executable") == sa.get("executable") or ea.get("name") == sa.get("name"):
+                        exists = True
+                        break
+                if not exists:
+                    apps.append(sa)
+                    modified = True
+                    
+            if modified:
+                data["applications"] = apps
+                with open(yaml_path, "w", encoding="utf-8") as f:
+                    yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
+                    
+            return apps
+        except Exception as e:
+            print(f"Error in get_applications: {e}")
+            pass
+    return scanned_apps
+
+@app.post("/api/projects/applications")
+def save_project_applications(req: ProjectApplicationsUpdate):
+    """Updates list of configured DCC applications inside the project's project.yaml."""
+    yaml_path = os.path.join(req.projectPath, "project.yaml")
+    if not os.path.isfile(yaml_path):
+        raise HTTPException(status_code=404, detail="Project configuration file not found")
+        
+    try:
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+            
+        # Update applications list
+        data["applications"] = [app.dict() for app in req.applications]
+        
+        with open(yaml_path, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
+            
+        return {"status": "success", "message": "Applications list updated successfully!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update project applications: {str(e)}")
 
 @app.post("/api/launch")
 def launch_application(req: LaunchRequest):
@@ -395,9 +627,15 @@ def launch_application(req: LaunchRequest):
             if not os.path.exists(launch_file):
                 raise HTTPException(status_code=404, detail=f"Preload file not found: {req.preload}")
         else:
-            # Determine latest task version
             version = get_latest_task_version(req.taskPath)
-            ext = "blend" if req.appType == "blender" else ("hip" if req.appType == "houdini" else "nk")
+            ext_map = {
+                "blender": "blend",
+                "houdini": "hip",
+                "nuke": "nk",
+                "mari": "mra",
+                "comfyui": "json"
+            }
+            ext = ext_map.get(req.appType, "custom")
             
             file_name = f"scene_v{version:03d}.{ext}"
             
@@ -429,6 +667,9 @@ def launch_application(req: LaunchRequest):
         env["ST_CWD"] = req.taskPath
         env["STUDIOTOOLS"] = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
+        if req.startupScript:
+            env["ST_STARTUP_SCRIPT"] = req.startupScript
+
         # Register custom Houdini path to load our menus and startup script
         if req.appType == "houdini":
             plugin_dir = os.path.join(env["STUDIOTOOLS"], "plugins", "houdini_studiotools")
@@ -447,6 +688,10 @@ def launch_application(req: LaunchRequest):
             startup_script = os.path.join(plugin_dir, "scripts", "startup.py")
             if os.path.exists(startup_script):
                 command.extend(["--python", startup_script])
+            if req.startupScript and os.path.exists(req.startupScript):
+                command.extend(["--python", req.startupScript])
+        elif req.startupScript and os.path.exists(req.startupScript):
+            command.append(req.startupScript)
         
         # Try to launch with a persistent terminal emulator so the user can see console output and debug crashes
         import shutil
@@ -560,6 +805,130 @@ def post_usd_create(path: str):
     if "error" in result:
         raise HTTPException(status_code=500, detail=result["error"])
     return result
+
+@app.delete("/api/items")
+def delete_item(path: str):
+    """Safely and recursively deletes a directory inside a registered project context."""
+    import shutil
+    target_path = os.path.abspath(path)
+    projects = load_projects_list()
+    
+    # Safety Check: Must be a subpath of a registered project and NOT the project root itself
+    is_safe = False
+    for p in projects:
+        project_path = os.path.abspath(p["path"])
+        if target_path.startswith(project_path) and target_path != project_path:
+            is_safe = True
+            break
+            
+    if not is_safe:
+        raise HTTPException(
+            status_code=400, 
+            detail="Forbidden: Target path must be a subdirectory within a registered project context and cannot be the project root itself."
+        )
+        
+    if not os.path.exists(target_path):
+        raise HTTPException(status_code=404, detail="Path not found on disk")
+        
+    try:
+        if os.path.isdir(target_path):
+            shutil.rmtree(target_path)
+        else:
+            os.remove(target_path)
+        return {"status": "success", "message": f"Successfully deleted '{os.path.basename(target_path)}'"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete item: {str(e)}")
+
+@app.post("/api/items/toggle-disabled")
+def toggle_item_disabled(req: ToggleDisabledRequest):
+    """Toggles the disabled state of a folder/task in its folder.yaml or project.yaml."""
+    target_path = os.path.abspath(req.path)
+    if not os.path.exists(target_path):
+        raise HTTPException(status_code=404, detail="Path not found on disk")
+        
+    project_yaml = os.path.join(target_path, "project.yaml")
+    folder_yaml = os.path.join(target_path, "folder.yaml")
+    
+    target_yaml = None
+    if os.path.isfile(project_yaml):
+        target_yaml = project_yaml
+    elif os.path.isfile(folder_yaml):
+        target_yaml = folder_yaml
+    else:
+        # If it's a directory but has no yaml metadata, create a default folder.yaml first
+        if os.path.isdir(target_path):
+            target_yaml = folder_yaml
+            try:
+                create_folder_yaml(target_path, os.path.basename(target_path), "folder", "custom")
+            except Exception as ce:
+                raise HTTPException(status_code=500, detail=f"Failed to create default folder configuration: {str(ce)}")
+        else:
+            raise HTTPException(status_code=400, detail="Target is not a directory or has no configuration metadata file.")
+
+    try:
+        with open(target_yaml, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f) or {}
+            
+        data["disabled"] = req.disabled
+        
+        with open(target_yaml, "w", encoding="utf-8") as f:
+            yaml.safe_dump(data, f, sort_keys=False, default_flow_style=False)
+            
+        status = "disabled" if req.disabled else "enabled"
+        return {"status": "success", "message": f"Successfully {status} '{os.path.basename(target_path)}'"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update item disabled status: {str(e)}")
+
+@app.post("/api/projects/archive")
+def archive_project(req: ProjectArchiveRequest):
+    """Archives or restores a project context in projects.yaml."""
+    projects = load_projects_list()
+    target_path = os.path.abspath(req.path)
+    
+    found = False
+    for p in projects:
+        if os.path.abspath(p["path"]) == target_path:
+            p["archived"] = req.archived
+            found = True
+            break
+            
+    if not found:
+        raise HTTPException(status_code=404, detail="Project path not registered")
+        
+    save_projects_list(projects)
+    action = "archived" if req.archived else "restored"
+    return {"status": "success", "message": f"Project successfully {action}!"}
+
+@app.post("/api/projects/delete")
+def delete_project(req: ProjectDeleteRequest):
+    """Unregisters a project and optionally deletes all files on disk."""
+    import shutil
+    projects = load_projects_list()
+    target_path = os.path.abspath(req.path)
+    
+    # Remove from list
+    new_projects = [p for p in projects if os.path.abspath(p["path"]) != target_path]
+    if len(new_projects) == len(projects):
+        raise HTTPException(status_code=404, detail="Project path not registered")
+        
+    save_projects_list(new_projects)
+    
+    deleted_files = False
+    if req.deleteDiskFiles:
+        if os.path.exists(target_path):
+            try:
+                shutil.rmtree(target_path)
+                deleted_files = True
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500, 
+                    detail=f"Unregistered project, but failed to delete disk files: {str(e)}"
+                )
+                
+    return {
+        "status": "success", 
+        "message": "Project unregistered successfully!" + (" All files on disk deleted." if deleted_files else "")
+    }
 
 # --- Session command queues for active DCC sessions ---
 SESSION_COMMANDS = {}
