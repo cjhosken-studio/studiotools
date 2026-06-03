@@ -245,6 +245,9 @@ def get_project_tree(path: str):
                             import re
                             if f.endswith((".yaml", ".yml")) or re.search(r"\.blend\d+$", f):
                                 continue
+                            # .blend companion copies in versions/ are for reference only — exclude from deliverables
+                            if sub == "versions" and f.endswith(".blend"):
+                                continue
                             full_f = os.path.join(root, f)
                             rel_f = os.path.relpath(full_f, current_path)
                             ext = os.path.splitext(f)[-1].lstrip(".")
@@ -497,6 +500,7 @@ def scan_system_applications() -> List[dict]:
         "name": mari_name,
         "appType": "mari",
         "executable": mari_exe or "mock_mari",
+        "args": ["--dpiscaling=qt"],
         "installed": mari_exe is not None,
         "extensions": ["mra"],
         "icon": "mari"
@@ -686,17 +690,55 @@ def launch_application(req: LaunchRequest):
         if req.startupScript:
             env["ST_STARTUP_SCRIPT"] = req.startupScript
 
-        # Register custom Houdini path to load our menus and startup script
-        if req.appType == "houdini":
-            plugin_dir = os.path.join(env["STUDIOTOOLS"], "plugins", "houdini_studiotools")
-            env["HOUDINI_PATH"] = f"{plugin_dir}:&"
-        
         # Only pass the launch file to the DCC if it already exists on disk and is non-empty (avoiding 0-byte corruptions).
         # If it doesn't exist, we start the DCC empty and let its startup scripts initialize and save the new version.
         if os.path.exists(launch_file) and os.path.getsize(launch_file) > 0:
             command = [req.executable, launch_file]
         else:
             command = [command_item for command_item in [req.executable] if command_item]
+
+        # Register custom Houdini package directories so all packages merge correctly.
+        # Using HOUDINI_PACKAGE_DIR (colon-separated list of dirs containing .json package files)
+        # avoids overwriting HOUDINI_PATH and is fully compatible with the existing
+        # /public/pipeline/houdini/packages/ package set (axiom, groombear, paradigm, etc.)
+        if req.appType == "houdini":
+            plugin_dir = os.path.join(env["STUDIOTOOLS"], "plugins", "houdini_studiotools")
+            st_packages_dir = os.path.join(plugin_dir, "packages")
+            pipeline_packages_dir = "/public/pipeline/houdini/packages"
+            existing_pkg_dirs = env.get("HOUDINI_PACKAGE_DIR", "")
+            pkg_dirs = [st_packages_dir]
+            if os.path.isdir(pipeline_packages_dir):
+                pkg_dirs.append(pipeline_packages_dir)
+            if existing_pkg_dirs:
+                pkg_dirs.append(existing_pkg_dirs)
+            env["HOUDINI_PACKAGE_DIR"] = os.pathsep.join(pkg_dirs)
+
+        # Set Blender pipeline addons directory so all /public/pipeline/blender addons load
+        if req.appType == "blender":
+            pipeline_blender_addons = "/public/pipeline/blender/addons"
+            if os.path.isdir(pipeline_blender_addons):
+                env["BLENDER_USER_EXTENSIONS"] = pipeline_blender_addons
+
+        # Set Nuke plugin path to auto-load nuke_studiotools init.py + menu.py
+        if req.appType == "nuke":
+            plugin_dir = os.path.join(env["STUDIOTOOLS"], "plugins", "nuke_studiotools")
+            existing_nuke_path = env.get("NUKE_PATH", "")
+            nuke_dirs = [plugin_dir]
+            if existing_nuke_path:
+                nuke_dirs.append(existing_nuke_path)
+            env["NUKE_PATH"] = os.pathsep.join(nuke_dirs)
+            # Tell the plugin where to find the user's pipeline nuke tools
+            env["ST_NUKE_PLUGIN_PATH"] = "/public/pipeline/nuke"
+
+        # Set MARI_SCRIPT_PATH so Mari auto-executes the studiotools startup.py on launch
+        if req.appType == "mari":
+            plugin_dir = os.path.join(env["STUDIOTOOLS"], "plugins", "mari_studiotools")
+            existing_mari_path = env.get("MARI_SCRIPT_PATH", "")
+            mari_dirs = [plugin_dir]
+            command.extend(["--dpiscaling=qt"])
+            if existing_mari_path:
+                mari_dirs.append(existing_mari_path)
+            env["MARI_SCRIPT_PATH"] = os.pathsep.join(mari_dirs)
         
         # Register custom Blender startup script integration
         if req.appType == "blender":

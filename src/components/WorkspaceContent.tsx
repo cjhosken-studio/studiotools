@@ -103,7 +103,7 @@ export default function WorkspaceContent({
             {selectedNode.type === 'task' && (() => {
               const workfiles = selectedNode.files.filter(f => f.category === 'wip');
               workfiles.sort((a, b) => a.name.localeCompare(b.name));
-              const versionFiles = selectedNode.files.filter(f => f.category === 'versions' && f.name !== 'thumbnail.png');
+              const versionFiles = selectedNode.files.filter(f => f.category === 'versions' && f.name !== 'thumbnail.png' && !f.name.endsWith('.blend'));
               const publishedFiles = selectedNode.files.filter(f => f.category === 'published' && f.name !== 'thumbnail.png');
               
               return (
@@ -469,7 +469,52 @@ export default function WorkspaceContent({
                                             → Houdini
                                           </button>
                                         )}
+                                        {/* Mari button — shown for all USD assets since Mari accepts any USD as geometry */}
+                                        <button 
+                                          className="btn"
+                                          onClick={() => onLoadInDCC('mari', currentFile.absolutePath)}
+                                          style={{ 
+                                            flex: 1,
+                                            padding: '5px', 
+                                            fontSize: '11px',
+                                            background: 'rgba(180, 100, 220, 0.15)',
+                                            border: '1px solid rgba(180, 100, 220, 0.4)',
+                                            color: '#c084fc',
+                                            fontWeight: 500,
+                                            cursor: 'pointer'
+                                          }}
+                                          title="Load USD geometry in Mari for texturing"
+                                        >
+                                          → Mari
+                                        </button>
                                       </div>
+
+                                      {/* Copy Path — for use with Mari's Import from Clipboard action */}
+                                      <button
+                                        className="btn"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(currentFile.absolutePath).then(() => {
+                                            // Brief visual feedback via title tooltip change
+                                          });
+                                        }}
+                                        style={{
+                                          width: '100%',
+                                          padding: '5px',
+                                          fontSize: '11px',
+                                          background: 'rgba(255,255,255,0.04)',
+                                          border: '1px solid var(--border)',
+                                          color: 'var(--text-secondary)',
+                                          fontWeight: 500,
+                                          cursor: 'pointer',
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '5px'
+                                        }}
+                                        title={`Copy absolute path to clipboard:\n${currentFile.absolutePath}`}
+                                      >
+                                        📋 Copy Path
+                                      </button>
                                     </div>
                                   )}
                                 </div>

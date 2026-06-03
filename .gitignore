@@ -28,3 +28,4 @@ dist-ssr
 node_modules
 __pycache__
 public/pipeline
+*.pyc
