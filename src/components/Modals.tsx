@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Project, TreeNode, Application } from '../types';
+import type { Project, TreeNode, Application, ProjectFile } from '../types';
 import { Archive, Trash2, ShieldAlert, Plus, Eye, EyeOff } from 'lucide-react';
 import { AppIcon } from './AppIcon';
 
@@ -777,6 +777,96 @@ export function DeleteConfirmModal({
               }}
             >
               <Trash2 size={13} /> Delete Item
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface DeleteDeliverableModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  file: ProjectFile | null;
+  onConfirm: (deleteScope: 'version' | 'all') => void;
+}
+
+export function DeleteDeliverableModal({
+  isOpen,
+  onClose,
+  file,
+  onConfirm,
+}: DeleteDeliverableModalProps) {
+  const [scope, setScope] = useState<'version' | 'all'>('version');
+
+  useEffect(() => {
+    if (isOpen) {
+      setScope('version');
+    }
+  }, [isOpen]);
+
+  if (!isOpen || !file) return null;
+
+  // Determine the asset key and current version name
+  const match = file.name.match(/^(.+)_v(\d+)$/);
+  const assetKey = match ? match[1] : file.name;
+  const realVersionName = file.realPath ? file.realPath.split('/').pop() || file.name : file.name;
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" style={{ width: '450px' }} onClick={e => e.stopPropagation()}>
+        <div className="panel-header" style={{ borderBottom: '1px solid rgba(231, 76, 60, 0.3)' }}>
+          <h2 style={{ color: 'var(--color-danger)' }}>Delete Deliverable</h2>
+        </div>
+        <div style={{ padding: '20px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '20px' }}>
+            <div style={{ background: 'rgba(231, 76, 60, 0.1)', color: 'var(--color-danger)', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShieldAlert size={20} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>
+                Are you sure you want to delete deliverable "{assetKey}"?
+              </p>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '6px', border: '1px solid var(--border)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12.5px', color: 'var(--text-primary)' }}>
+                  <input 
+                    type="radio" 
+                    name="deleteScope" 
+                    checked={scope === 'version'} 
+                    onChange={() => setScope('version')} 
+                  />
+                  <span>Delete only version: <strong style={{ color: '#fff' }}>{realVersionName}</strong></span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12.5px', color: 'var(--text-primary)' }}>
+                  <input 
+                    type="radio" 
+                    name="deleteScope" 
+                    checked={scope === 'all'} 
+                    onChange={() => setScope('all')} 
+                  />
+                  <span>Delete <strong style={{ color: 'var(--color-danger)' }}>whole asset</strong> (all versions and publish link)</span>
+                </label>
+              </div>
+
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '12px', lineHeight: '1.4' }}>
+                This will delete the selected files from disk permanently. This action is irreversible.
+              </p>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+            <button type="button" className="btn" onClick={onClose}>Cancel</button>
+            <button 
+              type="button" 
+              className="btn btn-danger" 
+              onClick={() => {
+                onConfirm(scope);
+                onClose();
+              }}
+            >
+              <Trash2 size={13} /> Confirm Delete
             </button>
           </div>
         </div>

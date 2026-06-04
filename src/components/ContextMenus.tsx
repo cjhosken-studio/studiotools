@@ -1,4 +1,5 @@
-import { FolderPlus, Plus, Sparkles, Settings, Trash2 } from 'lucide-react';
+import { FolderPlus, Plus, Sparkles, Settings, Trash2, Copy, FolderOpen } from 'lucide-react';
+
 import type { TreeNode, ProjectFile } from '../types';
 
 interface NodeContextMenuProps {
@@ -116,13 +117,19 @@ interface AssetContextMenuProps {
   assetContextMenu: { x: number; y: number; file: ProjectFile } | null;
   onClose: () => void;
   onRegenerateThumbnail: (file: ProjectFile) => void;
+  onCopyPath: (file: ProjectFile) => void;
+  onDeleteDeliverable: (file: ProjectFile) => void;
 }
+
 
 export function AssetContextMenu({
   assetContextMenu,
   onClose,
   onRegenerateThumbnail,
+  onCopyPath,
+  onDeleteDeliverable,
 }: AssetContextMenuProps) {
+
   if (!assetContextMenu) return null;
 
   return (
@@ -138,14 +145,30 @@ export function AssetContextMenu({
       padding: '4px 0',
       display: 'flex',
       flexDirection: 'column',
-      minWidth: '180px',
+      minWidth: '200px',
       animation: 'fadeIn 100ms ease'
     }} onClick={e => e.stopPropagation()}>
-      <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontStyle: 'italic', fontWeight: 600 }}>
-        Asset: {assetContextMenu.file.name}
+      {/* Header: show folder name */}
+      <div style={{ padding: '6px 12px', fontSize: '11px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontStyle: 'italic', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+        <FolderOpen size={11} style={{ flexShrink: 0 }} />
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{assetContextMenu.file.name}</span>
       </div>
-      <button 
-        className="btn btn-text" 
+
+      {/* Copy folder path (URL) */}
+      <button
+        className="btn btn-text"
+        style={{ justifyContent: 'flex-start', padding: '8px 14px', fontSize: '12px', width: '100%', gap: '8px', borderRadius: 0 }}
+        onClick={() => {
+          onCopyPath(assetContextMenu.file);
+          onClose();
+        }}
+      >
+        <Copy size={13} /> Copy URL
+      </button>
+
+      {/* Regenerate thumbnail — only meaningful for USD deliverables */}
+      <button
+        className="btn btn-text"
         style={{ justifyContent: 'flex-start', padding: '8px 14px', fontSize: '12px', width: '100%', gap: '8px', borderRadius: 0 }}
         onClick={() => {
           onRegenerateThumbnail(assetContextMenu.file);
@@ -153,6 +176,27 @@ export function AssetContextMenu({
         }}
       >
         <Sparkles size={13} style={{ color: 'var(--color-usd)' }} /> Force Regenerate Preview
+      </button>
+
+      {/* Delete deliverable */}
+      <button
+        className="btn btn-text"
+        style={{ 
+          justifyContent: 'flex-start', 
+          padding: '8px 14px', 
+          fontSize: '12px', 
+          width: '100%', 
+          gap: '8px', 
+          borderTop: '1px solid var(--border)', 
+          borderRadius: 0, 
+          color: 'var(--color-danger)'
+        }}
+        onClick={() => {
+          onDeleteDeliverable(assetContextMenu.file);
+          onClose();
+        }}
+      >
+        <Trash2 size={13} /> Delete Deliverable...
       </button>
     </div>
   );

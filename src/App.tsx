@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Project, ProjectFile, TreeNode, Application } from './types';
 import Header from './components/Header';
 import PipelineTree from './components/PipelineTree';
 import WorkspaceContent from './components/WorkspaceContent';
 import DetailedInspector from './components/DetailedInspector';
-import { ProjectModal, FolderModal, TaskModal, ProjectSettingsModal, DeleteConfirmModal } from './components/Modals';
+import { ProjectModal, FolderModal, TaskModal, ProjectSettingsModal, DeleteConfirmModal, DeleteDeliverableModal } from './components/Modals';
 import { NodeContextMenu, AssetContextMenu } from './components/ContextMenus';
 import Toast from './components/Toast';
 
@@ -23,6 +23,9 @@ export default function App() {
   const [isProjectSettingsModalOpen, setIsProjectSettingsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteTargetNode, setDeleteTargetNode] = useState<TreeNode | null>(null);
+  const [isDeleteDeliverableModalOpen, setIsDeleteDeliverableModalOpen] = useState(false);
+  const [deleteDeliverableTarget, setDeleteDeliverableTarget] = useState<ProjectFile | null>(null);
+  const [selectedDeliverable, setSelectedDeliverable] = useState<ProjectFile | null>(null);
 
   // New item inputs
   const [newProjectName, setNewProjectName] = useState('');
@@ -353,7 +356,7 @@ export default function App() {
       const response = await fetch('/api/usd/thumbnail/regenerate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ usdPath: file.absolutePath })
+        body: JSON.stringify({ usdPath: file.usdPath || file.absolutePath })
       });
       
       if (response.ok) {
@@ -366,6 +369,62 @@ export default function App() {
     } catch (err) {
       showToast('Error communicating with server', 'error');
     }
+  };
+
+  const handleCopyDeliverablePath = (file: ProjectFile) => {
+    const pathToCopy = file.absolutePath;
+    navigator.clipboard.writeText(pathToCopy).then(() => {
+      showToast(`Copied path to clipboard: ${pathToCopy}`);
+    }).catch(() => {
+      // Fallback for non-https contexts
+      const el = document.createElement('textarea');
+      el.value = pathToCopy;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast(`Copied path to clipboard: ${pathToCopy}`);
+    });
+  };
+
+  const lastSelectedNodePathRef = useRef<string | null>(null);
+  useEffect(() => {
+    const currentPath = selectedNode?.path || null;
+    if (currentPath !== lastSelectedNodePathRef.current) {
+      setSelectedDeliverable(null);
+      lastSelectedNodePathRef.current = currentPath;
+    }
+  }, [selectedNode?.path]);
+
+  // Keep selected deliverable in sync with polled/updated node files
+  useEffect(() => {
+    if (selectedDeliverable && selectedNode) {
+      const found = selectedNode.files.find(f => 
+        (f.realPath && f.realPath === selectedDeliverable.realPath) ||
+        (f.absolutePath === selectedDeliverable.absolutePath)
+      );
+      if (found) {
+        if (found !== selectedDeliverable) {
+          setSelectedDeliverable(found);
+        }
+      } else {
+        setSelectedDeliverable(null);
+      }
+    }
+  }, [selectedNode, selectedDeliverable]);
+
+  const handleCopyText = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`Copied ${label} to clipboard!`);
+    }).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast(`Copied ${label} to clipboard!`);
+    });
   };
 
   const handlePublishVersion = async (taskPath: string, assetName: string, versionFolder: string) => {
@@ -388,39 +447,47 @@ export default function App() {
     }
   };
 
-  const handleLoadInDCC = async (appType: string, filePath: string) => {
+
+
+
+  const handleDeleteDeliverableClick = (file: ProjectFile) => {
+    setDeleteDeliverableTarget(file);
+    setIsDeleteDeliverableModalOpen(true);
+  };
+
+  const handleDeleteDeliverableConfirm = async (scope: 'version' | 'all') => {
+    if (!deleteDeliverableTarget || !selectedNode) return;
+
+    const file = deleteDeliverableTarget;
+    const match = file.name.match(/^(.+)_v(\d+)$/);
+    const assetName = match ? match[1] : file.name;
+    const realVersionFolder = file.realPath ? file.realPath.split('/').pop() : file.name;
+
+    const versionFolder = scope === 'version' ? realVersionFolder : undefined;
+
     try {
-      const parts = filePath.split('/');
-      let taskPath = "";
-      const idx = parts.findIndex(p => p === 'wip' || p === 'published' || p === 'versions');
-      if (idx !== -1) {
-        taskPath = parts.slice(0, idx).join('/');
-      } else {
-        taskPath = selectedNode ? selectedNode.path : filePath.substring(0, filePath.lastIndexOf('/'));
-      }
-      
-      const response = await fetch('/api/sessions/command', {
+      const response = await fetch('/api/usd/delete-deliverable', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          appType,
-          taskPath,
-          command: 'load_usd',
-          argument: filePath
+          taskPath: selectedNode.path,
+          assetName,
+          versionFolder
         })
       });
-      
+      const data = await response.json();
       if (response.ok) {
-        showToast(`Sent load asset command to active ${appType} session!`);
+        showToast(data.message || 'Deliverable successfully deleted');
+        if (activeProject) {
+          fetchProjectTree(activeProject.path, true);
+        }
       } else {
-        const err = await response.json();
-        showToast(err.detail || 'Failed to send load asset command', 'error');
+        showToast(data.detail || 'Failed to delete deliverable', 'error');
       }
     } catch (err) {
-      showToast('Error connecting to active session', 'error');
+      showToast('Error deleting deliverable', 'error');
     }
   };
-
 
   const handleDeleteNode = async (node: TreeNode) => {
     try {
@@ -585,13 +652,18 @@ export default function App() {
             onLaunchApp={handleLaunchApp}
             onOpenWorkfile={handleOpenWorkfile}
             onAssetContextMenu={handleAssetContextMenu}
-            onLoadInDCC={handleLoadInDCC}
             onPublishVersion={handlePublishVersion}
+            selectedDeliverable={selectedDeliverable}
+            onSelectDeliverable={setSelectedDeliverable}
           />
         </div>
 
         {/* RIGHT PANEL: Metadata Inspector */}
-        <DetailedInspector selectedNode={selectedNode} />
+        <DetailedInspector 
+          selectedNode={selectedNode} 
+          selectedDeliverable={selectedDeliverable}
+          onCopyText={handleCopyText}
+        />
 
       </div>
 
@@ -691,12 +763,26 @@ export default function App() {
         }}
       />
 
+      {/* MODAL 6: Delete Deliverable */}
+      <DeleteDeliverableModal
+        isOpen={isDeleteDeliverableModalOpen}
+        onClose={() => {
+          setIsDeleteDeliverableModalOpen(false);
+          setDeleteDeliverableTarget(null);
+        }}
+        file={deleteDeliverableTarget}
+        onConfirm={handleDeleteDeliverableConfirm}
+      />
+
       {/* ASSET CONTEXT MENU */}
       <AssetContextMenu
         assetContextMenu={assetContextMenu}
         onClose={() => setAssetContextMenu(null)}
         onRegenerateThumbnail={handleRegenerateThumbnail}
+        onCopyPath={handleCopyDeliverablePath}
+        onDeleteDeliverable={handleDeleteDeliverableClick}
       />
+
 
     </div>
   );

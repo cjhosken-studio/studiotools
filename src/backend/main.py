@@ -82,6 +82,11 @@ class PublishVersionRequest(BaseModel):
     assetName: str
     versionFolder: str
 
+class DeleteDeliverableRequest(BaseModel):
+    taskPath: str
+    assetName: str
+    versionFolder: Optional[str] = None
+
 class ToggleDisabledRequest(BaseModel):
     path: str
     disabled: bool
@@ -233,78 +238,187 @@ def get_project_tree(path: str):
             except Exception:
                 pass
 
-        # Find USD and other files if it's a task or folder
+        # Find files if it's a task
         files = []
         if node_type == "task":
-            for sub in ["wip", "versions", "published"]:
-                sub_dir = os.path.join(current_path, sub)
-                if os.path.exists(sub_dir):
-                    for root, _, filenames in os.walk(sub_dir, followlinks=True):
-                        for f in filenames:
-                            # Skip pipeline metadata cards and Blender backup files from being shown in workspace lists
-                            import re
-                            if f.endswith((".yaml", ".yml")) or re.search(r"\.blend\d+$", f):
-                                continue
-                            # .blend companion copies in versions/ are for reference only — exclude from deliverables
-                            if sub == "versions" and f.endswith(".blend"):
-                                continue
-                            full_f = os.path.join(root, f)
-                            rel_f = os.path.relpath(full_f, current_path)
-                            ext = os.path.splitext(f)[-1].lstrip(".")
+            # --- WIP files (individual files as before) ---
+            wip_dir = os.path.join(current_path, "wip")
+            if os.path.exists(wip_dir):
+                for root, _, filenames in os.walk(wip_dir, followlinks=True):
+                    for f in filenames:
+                        import re
+                        if f.endswith((".yaml", ".yml")) or re.search(r"\.blend\d+$", f):
+                            continue
+                        full_f = os.path.join(root, f)
+                        rel_f = os.path.relpath(full_f, current_path)
+                        ext = os.path.splitext(f)[-1].lstrip(".")
+                        files.append({
+                            "name": f,
+                            "relativePath": rel_f,
+                            "absolutePath": full_f,
+                            "category": "wip",
+                            "ext": ext
+                        })
+
+            def process_version_folder(folder_path: str, folder_name: str, category: str):
+                """Return one ProjectFile dict representing a whole version folder."""
+                import re
+                entry = {
+                    "name": folder_name,
+                    "relativePath": os.path.relpath(folder_path, current_path),
+                    "absolutePath": folder_path,
+                    "category": category,
+                    "ext": "folder",
+                    "versionFiles": [],
+                    "realPath": folder_path,
+                }
+
+                # Collect all non-yaml, non-thumbnail files inside this folder
+                usd_file = None
+                image_exts = {"png", "jpg", "jpeg", "exr", "tiff", "tif", "tga", "hdr"}
+                usd_exts = {"usd", "usda", "usdc", "usdz"}
+
+                for fn in sorted(os.listdir(folder_path)):
+                    if fn.endswith((".yaml", ".yml")) or fn == "thumbnail.png":
+                        continue
+                    fn_ext = os.path.splitext(fn)[-1].lstrip(".").lower()
+                    fn_path = os.path.join(folder_path, fn)
+                    if not os.path.isfile(fn_path):
+                        continue
+                    entry["versionFiles"].append({
+                        "name": fn,
+                        "absolutePath": fn_path,
+                        "ext": fn_ext,
+                    })
+                    if fn_ext in usd_exts and usd_file is None:
+                        usd_file = fn_path
+
+                if usd_file:
+                    entry["usdPath"] = usd_file
+
+                # Read metadata.yaml if present
+                meta_path = os.path.join(folder_path, "metadata.yaml")
+                app = "blender"
+                app_version = ""
+                shape = "mesh"
+                source_scene = None
+                if os.path.exists(meta_path):
+                    try:
+                        with open(meta_path, "r", encoding="utf-8") as mf:
+                            meta = yaml.safe_load(mf) or {}
+                            app = meta.get("application", "blender")
+                            app_version = meta.get("application_version", "")
+                            objs = meta.get("exported_root_objects", [])
+                            if objs:
+                                obj0 = str(objs[0]).lower()
+                                if "sphere" in obj0:
+                                    shape = "sphere"
+                                elif "cube" in obj0:
+                                    shape = "cube"
+                                elif "cylinder" in obj0:
+                                    shape = "cylinder"
+                                elif "cone" in obj0:
+                                    shape = "cone"
+                            raw_source = meta.get("source_scene") or meta.get("source_file")
+                            if raw_source:
+                                if os.path.isabs(raw_source) and os.path.exists(raw_source):
+                                    source_scene = raw_source
+                                else:
+                                    wip_app_dir = os.path.join(current_path, "wip", app)
+                                    candidate = os.path.join(wip_app_dir, os.path.basename(raw_source))
+                                    if os.path.exists(candidate):
+                                        source_scene = candidate
+                    except Exception:
+                        pass
+
+                if not source_scene:
+                    # Fallback: look for the most recently modified scene file in wip/<app>
+                    wip_app_dir = os.path.join(current_path, "wip", app)
+                    if os.path.isdir(wip_app_dir):
+                        ext_map = {
+                            "blender": (".blend",),
+                            "houdini": (".hip", ".hipnc", ".hiplc"),
+                            "nuke": (".nk",),
+                            "mari": (".mra",),
+                            "comfyui": (".json",),
+                        }
+                        valid_exts = ext_map.get(app, ())
+                        wip_candidates = [
+                            os.path.join(wip_app_dir, wf)
+                            for wf in os.listdir(wip_app_dir)
+                            if os.path.splitext(wf)[-1].lower() in valid_exts
+                        ]
+                        if wip_candidates:
+                            source_scene = max(wip_candidates, key=os.path.getmtime)
+
+                entry["application"] = app
+                entry["appVersion"] = app_version if app_version else None
+                if source_scene:
+                    entry["sourceScene"] = source_scene
+
+                # Generate / locate thumbnail (only for USD-containing version folders)
+                thumb_path = os.path.join(folder_path, "thumbnail.png")
+                if usd_file and not os.path.exists(thumb_path):
+                    try:
+                        clean_name = re.sub(r"_v\d+$", "", folder_name)
+                        generate_usd_thumbnail(thumb_path, shape=shape, asset_name=clean_name, app_name=app)
+                    except Exception as te:
+                        print(f"Failed to generate thumbnail for {folder_name}: {te}")
+
+                # Also look for a thumbnail that is an image file in the folder (non-USD deliverables)
+                if not os.path.exists(thumb_path):
+                    for fn in sorted(os.listdir(folder_path)):
+                        fn_ext = os.path.splitext(fn)[-1].lstrip(".").lower()
+                        if fn_ext in image_exts and fn != "thumbnail.png":
+                            # Use first image as thumbnail
+                            thumb_path = os.path.join(folder_path, fn)
+                            break
+
+                if os.path.exists(thumb_path):
+                    entry["thumbnailPath"] = thumb_path
+
+                return entry
+
+            # --- Versions: support both old and new layouts ---
+            versions_dir = os.path.join(current_path, "versions")
+            if os.path.exists(versions_dir):
+                for subitem in sorted(os.listdir(versions_dir)):
+                    subitem_path = os.path.join(versions_dir, subitem)
+                    if os.path.isdir(subitem_path):
+                        # Check if this directory is itself a version folder (old layout, e.g. myasset_v001)
+                        if re.match(r"^.+_v\d+$", subitem):
+                            files.append(process_version_folder(subitem_path, subitem, "versions"))
+                        else:
+                            # It could be an asset folder (new layout) containing v001, v002...
+                            # Scan for vNNN subdirectories
+                            has_new_versions = False
+                            for v_folder in sorted(os.listdir(subitem_path)):
+                                v_path = os.path.join(subitem_path, v_folder)
+                                if os.path.isdir(v_path) and re.match(r"^v\d+$", v_folder):
+                                    has_new_versions = True
+                                    # Present as myasset_vNNN to the frontend
+                                    ver_name = f"{subitem}_{v_folder}"
+                                    files.append(process_version_folder(v_path, ver_name, "versions"))
                             
-                            file_item = {
-                                "name": f,
-                                "relativePath": rel_f,
-                                "absolutePath": full_f,
-                                "category": sub,
-                                "ext": ext
-                            }
-                            
-                            # Automatically generate thumbnail on-the-fly for published/versioned USD deliverables
-                            if sub in ["published", "versions"] and ext in ["usd", "usda", "usdc"]:
-                                app = "blender"
-                                app_version = ""
-                                shape = "mesh"
-                                meta_path = os.path.join(root, "metadata.yaml")
-                                if os.path.exists(meta_path):
-                                    try:
-                                        with open(meta_path, "r", encoding="utf-8") as mf:
-                                            meta = yaml.safe_load(mf) or {}
-                                            app = meta.get("application", "blender")
-                                            app_version = meta.get("application_version", "")
-                                            # Guess shape based on exported objects
-                                            objs = meta.get("exported_root_objects", [])
-                                            if objs:
-                                                obj0 = str(objs[0]).lower()
-                                                if "sphere" in obj0:
-                                                    shape = "sphere"
-                                                elif "cube" in obj0:
-                                                    shape = "cube"
-                                                elif "cylinder" in obj0:
-                                                    shape = "cylinder"
-                                                elif "cone" in obj0:
-                                                    shape = "cone"
-                                    except Exception:
-                                        pass
-                                
-                                file_item["application"] = app
-                                file_item["appVersion"] = app_version if app_version else None
-                                
-                                thumb_path = os.path.join(root, "thumbnail.png")
-                                if not os.path.exists(thumb_path):
-                                    try:
-                                        # Use base asset name from filename for clean HUD display
-                                        asset_display = os.path.splitext(f)[0]
-                                        # Remove _v\d+ suffix for clean HUD title
-                                        clean_asset_display = re.sub(r"_v\d+$", "", asset_display)
-                                        generate_usd_thumbnail(thumb_path, shape=shape, asset_name=clean_asset_display, app_name=app)
-                                    except Exception as te:
-                                        print(f"Failed to generate thumbnail for {f}: {te}")
-                                
-                                if os.path.exists(thumb_path):
-                                    file_item["thumbnailPath"] = thumb_path
-                                    
-                            files.append(file_item)
+                            # Fallback: if it's a directory with no vNNN subfolders, process it as is
+                            if not has_new_versions:
+                                files.append(process_version_folder(subitem_path, subitem, "versions"))
+
+            # --- Published: one entry per symlinked subfolder (or real dir) ---
+            published_dir = os.path.join(current_path, "published")
+            if os.path.exists(published_dir):
+                for pub_item in sorted(os.listdir(published_dir)):
+                    pub_path = os.path.join(published_dir, pub_item)
+                    # Resolve symlink target
+                    real_path = os.path.realpath(pub_path)
+                    if os.path.isdir(real_path):
+                        entry = process_version_folder(real_path, pub_item, "published")
+                        # Override relativePath so it looks like published/<assetName>
+                        entry["relativePath"] = os.path.join("published", pub_item)
+                        # The absolutePath stays as the symlink so publish logic works correctly
+                        entry["absolutePath"] = pub_path
+                        files.append(entry)
+
 
         # Recurse children
         children = []
@@ -637,7 +751,27 @@ def launch_application(req: LaunchRequest):
             if not os.path.exists(launch_file):
                 raise HTTPException(status_code=404, detail=f"Preload file not found: {req.preload}")
         else:
-            version = get_latest_task_version(req.taskPath)
+            latest_version = get_latest_task_version(req.taskPath)
+            
+            # Check if any WIP file actually exists on disk for the task
+            has_wip_files = False
+            wip_dir = os.path.join(req.taskPath, "wip")
+            if os.path.exists(wip_dir):
+                for app_folder in os.listdir(wip_dir):
+                    joint_folder = os.path.join(wip_dir, app_folder)
+                    if os.path.isdir(joint_folder):
+                        for file_name in os.listdir(joint_folder):
+                            if re.search(r"[._-]?v(\d+)", file_name, re.IGNORECASE):
+                                has_wip_files = True
+                                break
+                    if has_wip_files:
+                        break
+            
+            if has_wip_files:
+                version = latest_version + 1
+            else:
+                version = 1
+                
             ext_map = {
                 "blender": "blend",
                 "houdini": "hip",
@@ -675,6 +809,7 @@ def launch_application(req: LaunchRequest):
         env["ST_TASK"] = os.path.basename(req.taskPath)
         env["ST_TASKAREA"] = os.path.basename(os.path.dirname(req.taskPath))
         env["ST_CWD"] = req.taskPath
+        env["ST_PRELOAD_FILE"] = os.path.abspath(launch_file)
         env["STUDIOTOOLS"] = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
         env["ST_APP_NAME"] = req.appType
@@ -877,6 +1012,15 @@ def publish_version(req: PublishVersionRequest):
     target_dir = os.path.join(versions_dir, req.versionFolder)
     
     if not os.path.isdir(target_dir):
+        # Fallback to the new structure: versions/<assetName>/v<version>
+        match = re.match(r"^(.+)_v(\d+)$", req.versionFolder)
+        if match:
+            asset_name, ver_num = match.groups()
+            new_target_dir = os.path.join(versions_dir, asset_name, f"v{int(ver_num):03d}")
+            if os.path.isdir(new_target_dir):
+                target_dir = new_target_dir
+                
+    if not os.path.isdir(target_dir):
         raise HTTPException(status_code=404, detail=f"Version folder not found: {req.versionFolder}")
         
     try:
@@ -889,11 +1033,106 @@ def publish_version(req: PublishVersionRequest):
                 os.remove(target_link)
                 
         # Create relative symlink to versions/
-        src = os.path.join("..", "versions", req.versionFolder)
+        src = os.path.relpath(target_dir, published_dir)
         os.symlink(src, target_link)
         return {"status": "success", "message": f"Successfully set version {req.versionFolder} as published."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create symlink: {str(e)}")
+
+@app.post("/api/usd/delete-deliverable")
+def delete_deliverable(req: DeleteDeliverableRequest):
+    """Safely deletes a specific version folder or an entire asset (all versions + symlink)."""
+    task_path = os.path.abspath(req.taskPath)
+    projects = load_projects_list()
+    
+    # Safety Check: Must be a subpath of a registered project and NOT the project root itself
+    is_safe = False
+    for p in projects:
+        project_path = os.path.abspath(p["path"])
+        if task_path.startswith(project_path) and task_path != project_path:
+            is_safe = True
+            break
+            
+    if not is_safe:
+        raise HTTPException(
+            status_code=400, 
+            detail="Forbidden: Task path must be within a registered project context."
+        )
+        
+    versions_dir = os.path.join(task_path, "versions")
+    published_dir = os.path.join(task_path, "published")
+    
+    import shutil
+    
+    deleted_items = []
+    
+    try:
+        if req.versionFolder:
+            # Delete only this specific version folder
+            target_dir = os.path.join(versions_dir, req.versionFolder)
+            if not os.path.exists(target_dir):
+                # Fallback to the new structure: versions/<assetName>/v<version>
+                match = re.match(r"^(.+)_v(\d+)$", req.versionFolder)
+                if match:
+                    asset_name, ver_num = match.groups()
+                    new_target_dir = os.path.join(versions_dir, asset_name, f"v{int(ver_num):03d}")
+                    if os.path.exists(new_target_dir):
+                        target_dir = new_target_dir
+
+            if os.path.exists(target_dir):
+                if os.path.isdir(target_dir):
+                    shutil.rmtree(target_dir)
+                else:
+                    os.remove(target_dir)
+                deleted_items.append(req.versionFolder)
+                
+            # Also check if the published symlink points to this version folder
+            target_link = os.path.join(published_dir, req.assetName)
+            if os.path.islink(target_link):
+                try:
+                    link_target = os.readlink(target_link)
+                    abs_link_target = os.path.abspath(os.path.join(published_dir, link_target))
+                    if abs_link_target == os.path.abspath(target_dir):
+                        os.remove(target_link)
+                        deleted_items.append(f"published link {req.assetName}")
+                except Exception:
+                    pass
+        else:
+            # Delete whole asset: all versions matching assetName and the published symlink
+            # New structure: delete versions/<assetName> folder
+            new_asset_dir = os.path.join(versions_dir, req.assetName)
+            if os.path.isdir(new_asset_dir):
+                shutil.rmtree(new_asset_dir)
+                deleted_items.append(req.assetName)
+
+            # Backwards compatibility: delete folders starting with assetName_vNNN or matching assetName
+            if os.path.exists(versions_dir):
+                for folder in os.listdir(versions_dir):
+                    # Check if it starts with assetName and matches the naming pattern
+                    import re
+                    match = re.match(rf"^{re.escape(req.assetName)}_v\d+$", folder)
+                    if match or folder == req.assetName:
+                        target_dir = os.path.join(versions_dir, folder)
+                        if os.path.exists(target_dir):
+                            if os.path.isdir(target_dir):
+                                shutil.rmtree(target_dir)
+                            else:
+                                os.remove(target_dir)
+                            deleted_items.append(folder)
+            
+            target_link = os.path.join(published_dir, req.assetName)
+            if os.path.exists(target_link) or os.path.islink(target_link):
+                if os.path.isdir(target_link) and not os.path.islink(target_link):
+                    shutil.rmtree(target_link)
+                else:
+                    os.remove(target_link)
+                deleted_items.append(f"published link {req.assetName}")
+                
+        if not deleted_items:
+            return {"status": "success", "message": "No files found to delete."}
+        return {"status": "success", "message": f"Successfully deleted: {', '.join(deleted_items)}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete deliverable: {str(e)}")
 
 @app.delete("/api/items")
 def delete_item(path: str):
